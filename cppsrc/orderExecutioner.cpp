@@ -16,10 +16,8 @@ StockLock &OrderExecutioner::_lockManager = StockLock::getInstance();
 OrderManager &OrderExecutioner::_manager = OrderManager::getOrderManagerInstance();
 
 OrderExecutioner::OrderExecutioner() {
-    checkExecutionQueue<_sellProcessingThread, _isSellProcessing>(_manager._SellExecutionQueue,
-                                                                  _manager.CV_sellProcessing, "sell");
-    checkExecutionQueue<_buyProcessingThread, _isBuyProcessing>(_manager._BuyExecutionQueue, _manager.CV_buyProcessing,
-                                                                "buy");
+    checkExecutionQueue<_sellProcessingThread, _isSellProcessing>(_manager._SellExecutionQueue, _manager.CV_sellProcessing, "sell");
+    checkExecutionQueue<_buyProcessingThread, _isBuyProcessing>(_manager._BuyExecutionQueue, _manager.CV_buyProcessing, "buy");
 }
 
 OrderExecutioner &OrderExecutioner::getExecutionerInstance() {
@@ -30,21 +28,19 @@ OrderExecutioner &OrderExecutioner::getExecutionerInstance() {
 template <thread &processingThread, atomic<bool> &isProcessing, typename QueueType, typename CVType>
 void OrderExecutioner::checkExecutionQueue(QueueType &executionQueue, CVType &cv, const string &queueType) {
     if (processingThread.joinable()) {
-        return; // Already running
+        return;
     }
 
-    // Thread creation and functionality
     processingThread = thread([this, &executionQueue, &cv, queueType]() {
         try {
             while (isProcessing) {
                 unique_lock<mutex> processingThreadLock(queueType == "buy" ? Mtx_buyThread : Mtx_sellThread);
 
-                // Thread waits if queue is empty and the system is still processing
                 cv.wait(processingThreadLock, [&]() {
                     return !executionQueue.empty() || !isProcessing;
                 });
 
-                if (!isProcessing) // system stops
+                if (!isProcessing)
                     break;
 
                 else if (!executionQueue.empty()) {
@@ -55,7 +51,7 @@ void OrderExecutioner::checkExecutionQueue(QueueType &executionQueue, CVType &cv
                         executionQueue.pop();
                     } catch (const exception &e) {
                         cerr << "Error popping from " << queueType << " execution queue: " << e.what() << "\n";
-                        continue; // Skip and continue
+                        continue;
                     }
 
                     if (pop_order) {
@@ -122,7 +118,6 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
 
         float tradeAmount = 0.0f;
 
-        // process all matched orders -> start to end-1
         for (size_t i = 0; i + 1 < accumulatedOrders.size(); ++i) {
             const auto &[matchedOrder, matchedQty] = accumulatedOrders[i];
 
@@ -132,11 +127,10 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
             float price = matchedOrder->getPrice() * matchedQty;
             tradeAmount += price;
 
-            // Update counterparty funds
             auto user = matchedOrder->getUser();
             string m_order_symbol = matchedOrder->getSymbol();
 
-            if (!user && matchedOrder->getOrderType() != ORDER_TYPE::SYSTEM) { // check for System order
+            if (!user && matchedOrder->getOrderType() != ORDER_TYPE::SYSTEM) {
                 throw runtime_error("Error: User is null in matched Order");
                 return;
             }
@@ -156,7 +150,6 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
             Store::addExecutedOrder(matchedOrder, matchedQty);
         }
 
-        // Executing processing order -> at accVtr end
         int matchedQty = accumulatedOrders.back().second;
 
         if (orderPtr->getPendingQty() == 0 && orderPtr->getStatus() == ORDER_STATUS::OPEN)
@@ -182,7 +175,6 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
 }
 
 OrderExecutioner::~OrderExecutioner() {
-    // cout << "Starting OrderExecutioner cleanup... \n";
 
     _isBuyProcessing = false;
     _isSellProcessing = false;
@@ -192,18 +184,13 @@ OrderExecutioner::~OrderExecutioner() {
 
     if (_buyProcessingThread.joinable()) {
         _buyProcessingThread.join();
-        // cout << "Buy processing thread finished \n";
     }
 
     if (_sellProcessingThread.joinable()) {
         _sellProcessingThread.join();
-        // cout << "Sell processing thread finished \n";
     }
 
     if (threadPool) {
         threadPool.reset();
-        // cout << "Thread pool reset complete \n";
     }
-
-    // cout << "OrderExecutioner destructed \n";
 }

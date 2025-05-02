@@ -13,14 +13,14 @@ class Order {
     bool _isBuy;
     int _qty;
     float _price;
-    shared_ptr<User> _user; // System = nullptr
+    shared_ptr<User> _user;
     atomic<int> _executedQty;
     atomic<ORDER_STATUS> _status;
     chrono::steady_clock::time_point _creationTime;
     chrono::steady_clock::time_point _expiryTime;
     chrono::system_clock::time_point _displayExpiryTime;
 
-    static atomic<long long> _globalOrderCount; // order counter - reset after each day
+    static atomic<long long> _globalOrderCount;
     long long getGlobalOrderCount();
 
   public:

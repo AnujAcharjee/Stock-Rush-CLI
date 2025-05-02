@@ -19,7 +19,6 @@ long long Order::getGlobalOrderCount() {
     return ++_globalOrderCount;
 }
 
-// setters
 void Order::updateStatus(ORDER_STATUS status) {
     this->_status.store(status);
 }
@@ -28,7 +27,6 @@ void Order::updateExecutedQty(int qty) {
     _executedQty += qty;
 };
 
-// getter
 bool Order::getIsBuy() const noexcept {
     return _isBuy;
 };

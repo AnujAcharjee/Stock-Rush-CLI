@@ -14,7 +14,7 @@ mutex Store::executedOrdersMtx;
 
 void Store::addUser(const string &username) {
     scoped_lock lock(userMtx);
-    const float fund = 10000.0f; // default
+    const float fund = 10000.0f;
     auto [it, inserted] = _usersMap.try_emplace(username, make_shared<User>(username, fund));
     if (!inserted) {
         cerr << "User already exists. Try another name." << '\n';
@@ -39,7 +39,7 @@ void Store::addExecutedOrder(shared_ptr<Order> orderPtr, int matchedQty) {
 
     time_t now = time(nullptr);
     string timeStr = ctime(&now);
-    timeStr.pop_back(); // remove newline
+    timeStr.pop_back();
 
     _executedOrdersVtr.push_back({to_string(orderPtr->getOrderId()), orderPtr->getSymbol(), to_string(matchedQty), timeStr});
 }
@@ -95,14 +95,13 @@ void Store::printUsers() {
 
 void Store::printStocks() {
     scoped_lock lock(stockMtx);
-    cout << "------------------ Stocks ------------------\n";
+    cout << "------------------- Stocks ---------------------\n";
 
     if (_stocksMap.empty()) {
         cout << "No stocks found!\n";
         return;
     }
 
-    // headers
     cout << left
          << setw(15) << "Symbol"
          << setw(18) << "Total Quantity"
@@ -111,7 +110,6 @@ void Store::printStocks() {
 
     cout << string(48, '-') << '\n';
 
-    // body
     for (const auto &[symbol, stock] : _stocksMap) {
         cout << left
              << setw(15) << stock->getSymbol()
@@ -128,9 +126,10 @@ void Store::printOrderVector() {
 
     if (_orderVtr.empty()) {
         cout << "No orders found! \n";
+        return; 
     }
 
-    // headers
+    // Header
     cout << left
          << setw(15) << "OrderId"
          << setw(10) << "Symbol"
@@ -143,12 +142,11 @@ void Store::printOrderVector() {
          << setw(15) << "Username"
          << '\n';
 
-    cout << string(120, '-') << '\n';
+    cout << string(135, '-') << '\n';
 
-    // body
     for (const auto &order : _orderVtr) {
         if (!order) {
-            __throw_runtime_error("Error: Null order pointer encountered");
+            throw runtime_error("Error: Null order pointer encountered");
         }
 
         shared_ptr<User> user = order->getUser();
@@ -169,6 +167,7 @@ void Store::printOrderVector() {
                 break;
         }
 
+        // Row
         cout << left
              << setw(15) << order->getOrderId()
              << setw(10) << order->getSymbol()
@@ -176,18 +175,20 @@ void Store::printOrderVector() {
              << setw(10) << order->getPrice()
              << setw(10) << (order->getIsBuy() ? "BUY" : "SELL")
              << setw(10) << orderType;
+
         if (t) {
-            cout << setw(25) << put_time(localtime(&t), "%d-%m-%Y %H:%M:%S");
+            cout << put_time(localtime(&t), "%d-%m-%Y %H:%M:%S"); 
+            cout << setw(6) << " ";                               
         } else {
             cout << setw(25) << " ";
         }
-        cout << left
-             << setw(15) << order->getExecutedQty()
+
+        cout << setw(15) << order->getExecutedQty()
              << setw(15) << username
              << '\n';
     }
 
-    cout << string(120, '-') << '\n';
+    cout << string(135, '-') << '\n';
 }
 
 void Store::printExecutedOrders() {
@@ -198,7 +199,6 @@ void Store::printExecutedOrders() {
         return;
     }
 
-    // header
     const auto &headerVtr = _executedOrdersVtr[0];
     for (const auto &header : headerVtr) {
         cout << left << setw(15) << header;
@@ -206,7 +206,6 @@ void Store::printExecutedOrders() {
     cout << '\n';
     cout << string(90, '-') << '\n';
 
-    // body
     for (size_t i = 1; i < _executedOrdersVtr.size(); i++) {
         for (const auto &j : _executedOrdersVtr[i]) {
             cout << left << setw(15) << j;

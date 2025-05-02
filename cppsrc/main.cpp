@@ -98,15 +98,14 @@ void placeOrder(OrderManager &orderMgr) {
         transform(expiryTypeStr.begin(), expiryTypeStr.end(), expiryTypeStr.begin(), ::toupper);
 
         if (expiryTypeStr == "DAY")
-            expirySeconds = 24 * 60 * 60;      // 1 day
-        else if (expiryTypeStr == "GTC")       // Good Till Cancelled – very long expiry
-            expirySeconds = 30 * 24 * 60 * 60; // 30 days
+            expirySeconds = 24 * 60 * 60;      
+        else if (expiryTypeStr == "GTC")       
+            expirySeconds = 30 * 24 * 60 * 60; 
         else if (expiryTypeStr == "GTD") {
             string gtdDateStr;
             cout << "Enter GTD expiry date (DD-MM-YYYY): ";
             cin >> gtdDateStr;
 
-            // Parse DD-MM-YYYY
             tm expiryTm = {};
             istringstream iss(gtdDateStr);
             char dash;
@@ -117,8 +116,8 @@ void placeOrder(OrderManager &orderMgr) {
                 return;
             }
 
-            expiryTm.tm_mon -= 1;     // tm_mon is 0-based (0 = Jan)
-            expiryTm.tm_year -= 1900; // tm_year is years since 1900
+            expiryTm.tm_mon -= 1;    
+            expiryTm.tm_year -= 1900;
             expiryTm.tm_hour = 0;
             expiryTm.tm_min = 0;
             expiryTm.tm_sec = 0;
@@ -138,7 +137,6 @@ void placeOrder(OrderManager &orderMgr) {
         }
     }
 
-    // Create and place the order
     auto order = make_shared<Order>(symbol, orderType, isBuy, qty, price, user, expirySeconds);
     if (!order) {
         cerr << "Error: Failed to create order.\n";
@@ -158,11 +156,12 @@ void addUser() {
     string username;
 
     cout << "Please enter a username to create a new user \n";
+    cout << "> ";
     cin >> username;
 
     while (cin.fail() || username.empty()) {
-        cin.clear();                                         // Clear error state
-        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+        cin.clear();                                         
+        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
         cout << "Invalid input. Please enter a valid username: \n";
         cin >> username;
     }
@@ -197,6 +196,7 @@ int main() {
     cout << "Starting the application... \n";
 
     try {
+        // Adding Default Users
         Store::addUser("User1");
         Store::addUser("User2");
         Store::addUser("User3");
@@ -207,10 +207,11 @@ int main() {
     }
 
     try {
+        // Add more Stock here (if needed)
         Store::addStocks("TCS", 999, 10000);
-        Store::addStocks("APPLE", 999, 10000);
-        Store::addStocks("BABA", 999, 10000);
-        Store::addStocks("GOOGL", 999, 10000);
+        Store::addStocks("APPLE", 888, 10000);
+        Store::addStocks("BABA", 777, 10000);
+        Store::addStocks("GOOGL", 1000, 10000);
     } catch (const exception &e) {
         cerr << "Error: in addStocks in main" << e.what() << "\n";
     }
@@ -218,6 +219,7 @@ int main() {
     OrderExecutioner::getExecutionerInstance();
     OrderManager &orderMgr = OrderManager::getOrderManagerInstance();
 
+    // Get user from store - default User added
     auto user1 = Store::getUser("User1");
     auto user2 = Store::getUser("User2");
     auto user3 = Store::getUser("User3");
@@ -228,15 +230,15 @@ int main() {
         return -1;
     }
 
-    // Create Orders
-    shared_ptr<Order> order1 = make_shared<Order>("TCS", ORDER_TYPE::MARKET, true, 1, 993.0f, user1, 24 * 60 * 60);
-    shared_ptr<Order> order2 = make_shared<Order>("APPLE", ORDER_TYPE::MARKET, true, 2, 999.0f, user2, 24 * 60 * 60);
-    shared_ptr<Order> order3 = make_shared<Order>("GOOGL", ORDER_TYPE::MARKET, true, 3, 999.0f, user4, 24 * 60 * 60);
-    shared_ptr<Order> order4 = make_shared<Order>("BABA", ORDER_TYPE::MARKET, true, 4, 999.0f, user5, 24 * 60 * 60);
-    shared_ptr<Order> order5 = make_shared<Order>("TCS", ORDER_TYPE::MARKET, false, 2, 998.0f, user1, 24 * 60 * 60);
-    shared_ptr<Order> order6 = make_shared<Order>("TCS", ORDER_TYPE::MARKET, true, 2, 900.0f, user3, 24 * 60 * 60);
+    // Create Default Orders here - (stock, orderType, isBuy, order_price_pre_stock, user_obj, expiry_time)
+   shared_ptr<Order> order1 = make_shared<Order>("TCS", ORDER_TYPE::LIMIT, true, 1, 993.0f, user1, 24 * 60 * 60);
+    shared_ptr<Order> order2 = make_shared<Order>("APPLE", ORDER_TYPE::LIMIT, true, 2, 999.0f, user2, 24 * 60 * 60);
+    shared_ptr<Order> order3 = make_shared<Order>("GOOGL", ORDER_TYPE::LIMIT, true, 3, 999.0f, user4, 24 * 60 * 60);
+    shared_ptr<Order> order4 = make_shared<Order>("BABA", ORDER_TYPE::LIMIT, true, 4, 999.0f, user5, 24 * 60 * 60);
+    shared_ptr<Order> order5 = make_shared<Order>("TCS", ORDER_TYPE::LIMIT, true, 2, 998.0f, user1, 24 * 60 * 60);
+    shared_ptr<Order> order6 = make_shared<Order>("TCS", ORDER_TYPE::LIMIT, true, 2, 900.0f, user3, 24 * 60 * 60);
 
-    // Create threads
+    // Create threads - place Default orders from
     vector<thread> userThreads;
     userThreads.emplace_back(processOrder, ref(orderMgr), order1);
     userThreads.emplace_back(processOrder, ref(orderMgr), order2);
@@ -245,7 +247,7 @@ int main() {
     userThreads.emplace_back(processOrder, ref(orderMgr), order5);
     userThreads.emplace_back(processOrder, ref(orderMgr), order6);
 
-    cout << "-->> Placing concurent system orders \n";
+    cout << "-->> Placing concurrent system orders \n";
     for (auto &thread : userThreads) {
         thread.join();
     }
@@ -262,8 +264,8 @@ int main() {
         cin >> res;
 
         if (cin.fail()) {
-            cin.clear();                                         // clear error flags
-            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard bad input
+            cin.clear();                                         
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid input. Please enter a number between 1 and 8.\n";
             continue;
         }
@@ -280,27 +282,22 @@ int main() {
                 break;
 
             case 3:
-                cout << ">>> All Available Stocks:\n";
                 Store::printStocks();
                 break;
 
             case 4:
-                cout << ">>> Order Book:\n";
                 printOrderBook();
                 break;
 
             case 5:
-                cout << ">>> Registered Users:\n";
                 Store::printUsers();
                 break;
 
             case 6:
-                cout << ">>> All Placed Orders:\n";
                 Store::printOrderVector();
                 break;
 
             case 7:
-                cout << ">>> Executed Orders:\n";
                 Store::printExecutedOrders();
                 break;
 

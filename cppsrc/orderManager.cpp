@@ -10,7 +10,6 @@ mutex OrderManager::Mtx_buyQ;
 mutex OrderManager::Mtx_sellQ;
 
 OrderManager::OrderManager() {
-    // cout << "OrderManager instantiated \n";
 };
 
 OrderManager &OrderManager::getOrderManagerInstance() {
@@ -31,7 +30,6 @@ void OrderManager::setOrderInQueue(shared_ptr<Order> order) {
         _SellExecutionQueue.push(order);
         CV_sellProcessing.notify_one();
     }
-    // cout << "Order set in queue \n";
 }
 
 bool OrderManager::placeOrder(shared_ptr<Order> orderPtr) {
@@ -43,17 +41,14 @@ bool OrderManager::placeOrder(shared_ptr<Order> orderPtr) {
         return false;
     }
 
-    // Add order in DB
     Store::addOrder(orderPtr);
 
-    // Add order in Execution Queue
     setOrderInQueue(orderPtr);
 
     return true;
 }
 
 OrderManager::~OrderManager() {
-    // Clear the execution queues
     {
         unique_lock<mutex> buyLock(Mtx_buyQ);
         while (!_BuyExecutionQueue.empty()) {
@@ -67,6 +62,4 @@ OrderManager::~OrderManager() {
             _SellExecutionQueue.pop();
         }
     }
-
-    // cout << "OrderManager destructed \n";
 }

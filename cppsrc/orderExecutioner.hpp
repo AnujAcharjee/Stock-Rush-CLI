@@ -13,7 +13,6 @@
 #include "store.hpp"
 #include "threadPool.hpp"
 
-// Singleton
 class OrderExecutioner
 {
   private:

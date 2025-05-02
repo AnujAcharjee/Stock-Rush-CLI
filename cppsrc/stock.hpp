@@ -12,7 +12,7 @@ class OrderBook;
 class Stock {
   private:
     const string _symbol;
-    atomic<float> _price; // last match price
+    atomic<float> _price;
     int _qty;
 
     shared_ptr<OrderBook> _orderBookInstance;

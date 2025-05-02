@@ -5,7 +5,6 @@ mutex StockLock::Mtx_lockMap;
 
 StockLock::StockLock()
 {
-    // cout << "StockExecutionerLock instantiated \n";
 }
 
 StockLock &StockLock::getInstance()
@@ -26,9 +25,6 @@ void StockLock::createLock(const string &symbol)
     }
 }
 
-// T1-> acquire the share_ptr of the lock, then mapGuard() locks immediately
-// T2-> acquire the same shared_ptr, but mapGuard() is already locked, so it waits util T1 releases mapGuard()
-// when mapGuard() unlocks - T2 locking succeed
 shared_ptr<mutex> StockLock::acquireLock(const string &symbol)
 {
     scoped_lock mapGuard(Mtx_lockMap);
@@ -49,5 +45,4 @@ void StockLock::releaseLock(const string &symbol)
 
 StockLock::~StockLock()
 {
-    // cout << "StockExecutionerLock destructed \n"l;
 }

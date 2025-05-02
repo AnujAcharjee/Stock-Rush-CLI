@@ -23,14 +23,13 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_Template(OppositeOrde
     float lastMatchPrice = 0;
     int matchedQty = 0;
 
-    auto it = op_book.begin(); // opp_book
+    auto it = op_book.begin(); 
     while (it != op_book.end() && comp(it->first, orderPtr->getPrice()) && matchedQty < targetQty) {
         auto &orderQueue = it->second;
 
         while (!orderQueue.empty() && matchedQty < targetQty) {
             auto q_orderPtr = orderQueue.front();
 
-            // Check for expired orders if any (skip System orders)
             if (q_orderPtr->getExpiryTime() < chrono::steady_clock::now() && q_orderPtr->getOrderType() != ORDER_TYPE::SYSTEM) {
                 orderQueue.pop();
                 continue;
@@ -58,11 +57,10 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_Template(OppositeOrde
             ++it;
     }
 
-    // Update Stock last trade price
     if (matchedQty != 0)
         Store::getStock(orderPtr->getSymbol())->updatePrice(lastMatchPrice);
 
-    if (matchedQty < targetQty && orderPtr->getOrderType() == ORDER_TYPE::LIMIT) // Add the  remaining stocks in processing order in same_OB
+    if (matchedQty < targetQty && orderPtr->getOrderType() == ORDER_TYPE::LIMIT) 
     {
         auto it_sm = sm_book.find(orderPtr->getPrice());
         if (it_sm == sm_book.end()) {
@@ -73,27 +71,23 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_Template(OppositeOrde
         }
     }
 
-    if (matchedQty == 0) // no orders matched for this processing order
+    if (matchedQty == 0)
         return accumulatedOrders;
 
-    // Add the processing order with matched qty at end of the accVtr
     accumulatedOrders.emplace_back(orderPtr, matchedQty);
     orderPtr->updateExecutedQty(matchedQty);
 
     return accumulatedOrders;
 }
 
-// Limit Order
 vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_OrderBook(shared_ptr<Order> orderPtr) {
     if (orderPtr->getIsBuy()) {
-        // Buy order matches with Sell order book (prices <= order price)
-        return matchOrder_Template(_sellOrderBook, _buyOrderBook, orderPtr,
+           return matchOrder_Template(_sellOrderBook, _buyOrderBook, orderPtr,
                                    [](float bookPrice, float orderPrice) {
                                        return bookPrice <= orderPrice;
                                    });
     } else {
-        // Sell order matches with Buy order book (prices >= order price)
-        return matchOrder_Template(_buyOrderBook, _sellOrderBook, orderPtr,
+               return matchOrder_Template(_buyOrderBook, _sellOrderBook, orderPtr,
                                    [](float bookPrice, float orderPrice) {
                                        return bookPrice >= orderPrice;
                                    });
@@ -119,13 +113,12 @@ void OrderBook::printOrderBook() const {
         return displayRows;
     };
 
-    // Print Order book
-    cout << "\n ========== Order Book for Stock: " << _symbol << " ==========\n";
+    cout << "\n======================= Order Book for Stock: " << _symbol << " ====================\n";
     cout << left
          << setw(12) << "Qty"
-         << setw(15) << "Bid " // buy
+         << setw(15) << "Bid " 
          << " | " << right
-         << setw(15) << "Ask" // Sell
+         << setw(15) << "Ask" 
          << setw(12) << "Qty" << '\n';
 
     cout << string(70, '-') << '\n';

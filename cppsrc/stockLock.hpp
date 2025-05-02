@@ -4,7 +4,6 @@
 
 #include "common.hpp"
 
-// Singleton
 class StockLock
 {
     static unordered_map<string, shared_ptr<mutex>> _lockMap;

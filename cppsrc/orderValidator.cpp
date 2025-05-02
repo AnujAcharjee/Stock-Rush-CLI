@@ -21,14 +21,14 @@ bool OrderValidator::validateOrder(shared_ptr<Order> orderPtr) const {
         float totalCost = orderPtr->getPrice() * orderPtr->getQty();
         if (totalCost > user->getFunds()) {
             cerr << "[Error] Insufficient funds to place buy order. Required: "
-                 << totalCost << ", Available: " << user->getFunds() << '\n';
+                << totalCost << ", Available: " << user->getFunds() << '\n';
             return false;
         }
     } else {
         int availableQty = user->getStockQty_in_demat(orderPtr->getSymbol());
         if (availableQty < orderPtr->getQty()) {
             cerr << "[Error] Insufficient stock quantity to sell. Available: "
-                 << availableQty << ", Required: " << orderPtr->getQty() << '\n';
+                << availableQty << ", Required: " << orderPtr->getQty() << '\n';
             return false;
         }
     }

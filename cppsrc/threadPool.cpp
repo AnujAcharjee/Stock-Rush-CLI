@@ -5,7 +5,6 @@ ThreadPool::ThreadPool(size_t numThreads)
     for (size_t i = 0; i < numThreads; ++i)
     {
         _workers.emplace_back([this]() {
-            // function<void()> task;
             while (true)
             {
                 move_only_function<void()> task;
@@ -14,13 +13,13 @@ ThreadPool::ThreadPool(size_t numThreads)
                     _condition.wait(lock, [this]() { return _stop || !_tasks.empty(); });
 
                     if (_stop && _tasks.empty())
-                        return; // terminate thread
+                        return;
 
-                    task = move(_tasks.front()); // move the thread obj from queue to task var
+                    task = move(_tasks.front());
                     _tasks.pop();
                 }
 
-                task(); // execute task func. extracted
+                task();
             }
         });
     }
@@ -37,6 +36,6 @@ ThreadPool::~ThreadPool()
     for (jthread &worker : _workers)
     {
         if (worker.joinable())
-            worker.join(); // Wait for threads to finish
+            worker.join();
     }
 }

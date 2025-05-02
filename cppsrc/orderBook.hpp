@@ -12,8 +12,8 @@
 
 class OrderBook {
     string _symbol;
-    map<float, queue<shared_ptr<Order>>, greater<float>> _buyOrderBook; // descending order
-    map<float, queue<shared_ptr<Order>>> _sellOrderBook;                // ascending order
+    map<float, queue<shared_ptr<Order>>, greater<float>> _buyOrderBook; 
+    map<float, queue<shared_ptr<Order>>> _sellOrderBook;                
 
     template <typename OppositeOrderBook, typename SameOrderBook, typename CompareFunc>
     vector<pair<shared_ptr<Order>, int>> matchOrder_Template(OppositeOrderBook &op_book, SameOrderBook &sm_book,

@@ -3,10 +3,8 @@
 Stock::Stock(const string &symbol, float price, int qty) : _symbol(symbol), _price(price), _qty(qty) {
     _orderBookInstance = make_shared<OrderBook>(symbol);
 
-    // Add stock lock
     StockLock::getInstance().createLock(symbol);
 
-    // Add all the stocks in the order book for sell
     shared_ptr<Order> order = make_shared<Order>(symbol,ORDER_TYPE::SYSTEM, false, qty, price, nullptr, 0);
     _orderBookInstance->setInOrderBookForSell(order);
 }
