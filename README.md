@@ -10,21 +10,26 @@
 - View the order book with buy and sell orders
 - View all placed orders, executed orders, and registered users
 
-## Setup & Installation
-
-### Prerequisites
-- C++ compiler to compile the engine
-- Ensure `engine.exe` is built and ready to run
-
-### Running the Application
-
-1. Clone or download the repository.
-2. Navigate to the directory containing `engine.exe`.
-3. Run the application via your terminal:
-
-```bash
-./engine.exe 
-```
+### Prerequisites & Setup
+- Clone the repository:
+  ```bash
+  git clone https://github.com/AnujAcharjee/CLI-StockTrader.git
+  cd CLI-StockTrader
+  ```
+- Requirements:
+  - A C++23 compatible compiler (e.g., `g++ 13+`, `clang++ 16+`)
+  - `make` tool installed
+- Compile the engine using a C++ compiler:
+  ```bash
+  make
+  ```
+- After successful compilation, the executable `engine.exe` will be available and ready to run.
+- Run the application via your terminal:
+  ```bash
+  ./engine.exe 
+  ```
+- Once executed, the CLI menu will appear for user interaction.
+  
 ## Usage
 Once the application is running, the main menu will be displayed:
 1) Add User  
