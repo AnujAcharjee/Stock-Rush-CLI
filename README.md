@@ -1,6 +1,6 @@
-# CLI-StockTrader
+# Stock Rush CLI
 
-**CLI-StockTrader** is a command-line-based stock trading simulation game where users can place buy and sell orders, manage stock portfolios, and view order books in real time. It simulates the functionality of a stock market using simple commands for creating users, placing orders, and viewing stock-related data.
+**Stock Rush CLI** is a command-line-based stock trading simulation game where users can place buy and sell orders, manage stock portfolios, and view order books in real time. It simulates the functionality of a stock market using simple commands for creating users, placing orders, and viewing stock-related data.
 
 ## Features
 
@@ -13,8 +13,8 @@
 ### Prerequisites & Setup
 - Clone the repository:
   ```bash
-  git clone https://github.com/AnujAcharjee/CLI-StockTrader.git
-  cd CLI-StockTrader
+  git clone https://github.com/AnujAcharjee/Stock-Rush-CLI.git
+  cd Stock-Rush-CLI
   ```
 - Requirements:
   - A C++23 compatible compiler (e.g., `g++ 13+`, `clang++ 16+`)
