@@ -112,3 +112,9 @@ Peak Queue Size:        148
 - **CPU Utilization**: Sum of CPU active time across all worker threads relative to total elapsed time.
 - **Peak Queue Size**: The maximum height of the priority queue during concurrent multi-threaded order submissions.
 
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
