@@ -18,24 +18,24 @@
   cd Stock-Rush-CLI
   ```
 - Requirements:
-  - A C++23 compatible compiler (e.g., `g++ 13+`, `clang++ 16+`)
-  - `make` tool installed
-- Compile the engine using a C++ compiler:
+  - A C++23 compatible compiler (e.g., `MSVC 19.30+`, `g++ 13+`, `clang++ 16+`)
+  - **CMake 3.14+** installed
+- Compile the engine using CMake:
   ```bash
-  make
-  ```
-- Compile the engine with performance metrics enabled:
-  ```bash
-  # Using Makefile
-  make metrics
+  # 1. Configure the build output (generates build folders)
+  cmake -B build -S .
 
-  # Or compiling directly with g++ (e.g. if 'rm' is not available on Windows)
-  g++ -std=c++23 -DENABLE_METRICS -g -Wall -Wextra -pthread cppsrc/*.cpp -o Engine
+  # 2. Compile the application
+  cmake --build build --config Release
   ```
-- After successful compilation, the executable `Engine.exe` (or `Engine`) will be available and ready to run.
+- After successful compilation, the executable will be available in the build directory.
 - Run the application via your terminal:
   ```bash
-  ./Engine.exe 
+  # On Windows
+  ./build/Release/Engine.exe
+
+  # On Linux / macOS
+  ./build/Engine
   ```
 
 ### Usage & Navigation
