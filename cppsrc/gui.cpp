@@ -33,8 +33,8 @@ void addTuiLog(const std::string &msg) {
 }
 
 // stress test runner
-void runStressTestTUI(OrderManager &orderMgr) {
-    const int NUM_ORDERS = 1000;
+void runStressTestTUI(OrderManager &orderMgr, int numOrders) {
+    const int NUM_ORDERS = numOrders;
     addTuiLog("Stress test: Initializing users and stocks...");
 
     // 1. Boost user balances and holdings to prevent validation rejections
@@ -161,6 +161,7 @@ void launchTUI(OrderManager &orderMgr) {
 
     // Add User Form
     std::string input_new_username = "";
+    std::string input_stress_orders = "1000";
 
     // Books Tab selection
     int selected_stock_book = 0;
@@ -177,6 +178,7 @@ void launchTUI(OrderManager &orderMgr) {
     Component comp_type_radio = Radiobox(&types, &selected_type);
 
     Component comp_input_new_user = Input(&input_new_username, "New username...");
+    Component comp_input_stress = Input(&input_stress_orders, "Order count...");
 
     Component comp_book_stock_dropdown = Dropdown(&stocks_list, &selected_stock_book);
 
@@ -224,9 +226,20 @@ void launchTUI(OrderManager &orderMgr) {
         }
     });
 
-    Component btn_stress_test = Button("Trigger 1,000-Order Stress Test", [&]() {
-        std::thread([&]() {
-            runStressTestTUI(orderMgr);
+    Component btn_stress_test = Button("Trigger Stress Test", [&]() {
+        int numOrders = 1000;
+        try {
+            numOrders = std::stoi(input_stress_orders);
+        } catch (...) {
+            addTuiLog("Invalid order count input. Defaulting to 1000.");
+            numOrders = 1000;
+        }
+        if (numOrders <= 0) {
+            addTuiLog("Order count must be greater than zero.");
+            return;
+        }
+        std::thread([&orderMgr, numOrders]() {
+            runStressTestTUI(orderMgr, numOrders);
         }).detach();
     });
 
@@ -247,6 +260,7 @@ void launchTUI(OrderManager &orderMgr) {
     });
 
     auto diagnostic_container = Container::Vertical({
+        comp_input_stress,
         btn_stress_test
     });
 
@@ -548,8 +562,13 @@ void launchTUI(OrderManager &orderMgr) {
                         vbox({
                             text("Stress Testing Controls") | bold | color(Color::Red),
                             separator(),
+                            hbox({
+                                text("Order Count: ") | center,
+                                comp_input_stress->Render() | border | size(WIDTH, EQUAL, 12)
+                            }) | center,
+                            separator(),
                             btn_stress_test->Render() | center,
-                            text("Pushes 1,000 random Buy/Sell orders into queues concurrently using 4 threads") | color(Color::GrayLight) | center
+                            text("Pushes random Buy/Sell orders into queues concurrently using 4 threads") | color(Color::GrayLight) | center
                         }) | flex | border
                     }),
                     vbox(log_lines) | border | size(HEIGHT, EQUAL, 10)
