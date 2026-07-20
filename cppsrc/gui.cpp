@@ -34,25 +34,27 @@ void addTuiLog(const std::string &msg) {
 
 // stress test runner
 void runStressTestTUI(OrderManager &orderMgr) {
-    const int NUM_ORDERS = 100;
-    addTuiLog("Stress test triggered: Dispatching " + std::to_string(NUM_ORDERS) + " concurrent orders...");
+    const int NUM_ORDERS = 1000;
+    addTuiLog("Stress test: Initializing users and stocks...");
 
     // 1. Boost user balances and holdings to prevent validation rejections
     std::vector<std::string> usernames = {"User1", "User2", "User3", "User4", "User5"};
-    std::vector<std::string> stocks;
-    for (const auto& [symbol, stockPtr] : Store::getStocksMap()) {
-        stocks.push_back(symbol);
-    }
+    std::vector<std::string> stocks = {"TCS", "AAPL", "BABA", "GOOGL"};
     
     for (const auto &name : usernames) {
         auto user = Store::getUser(name);
         if (user) {
-            user->addFunds(10000000.0);
+            user->addFunds(100000000.0); // 100 million
             for (const auto &symbol : stocks) {
-                user->addToDemat(symbol, 100000);
+                user->addToDemat(symbol, 1000000); // 1 million shares
             }
         }
     }
+
+    if (!Store::getStock("AAPL")) Store::addStocks("AAPL", 225.0f, 100000);
+    if (!Store::getStock("TCS")) Store::addStocks("TCS", 999.0f, 100000);
+    if (!Store::getStock("GOOGL")) Store::addStocks("GOOGL", 165.0f, 100000);
+    if (!Store::getStock("BABA")) Store::addStocks("BABA", 75.0f, 100000);
 
     // 2. Generate random orders
     std::random_device rd;
@@ -61,7 +63,7 @@ void runStressTestTUI(OrderManager &orderMgr) {
     std::uniform_int_distribution<> stockDist(0, stocks.size() - 1);
     std::uniform_int_distribution<> sideDist(0, 1); // 0 = Sell, 1 = Buy
     std::uniform_int_distribution<> qtyDist(1, 10);
-    std::uniform_real_distribution<float> priceVariationDist(-50.0f, 50.0f);
+    std::uniform_real_distribution<float> priceVariationDist(-20.0f, 20.0f);
 
     std::vector<std::shared_ptr<Order>> stressOrders;
     for (int i = 0; i < NUM_ORDERS; ++i) {
@@ -71,36 +73,58 @@ void runStressTestTUI(OrderManager &orderMgr) {
         int qty = qtyDist(gen);
         
         auto stock = Store::getStock(symbol);
-        float basePrice = stock ? stock->getPrice() : 1000.0f;
+        float basePrice = stock ? stock->getPrice() : 500.0f;
         float price = basePrice + priceVariationDist(gen);
         if (price <= 1.0f) price = 10.0f;
 
         stressOrders.push_back(std::make_shared<Order>(symbol, ORDER_TYPE::LIMIT, isBuy, qty, price, user, 24 * 60 * 60));
     }
 
-    // 3. Spawn threads to place orders concurrently
+    addTuiLog("Stress test: Dispatching 1000 orders using 4 concurrent threads...");
+
+    // 3. Reset and start benchmark timer
+    MetricsCollector::getInstance().resetTimer();
     auto startTime = std::chrono::high_resolution_clock::now();
-    
-    std::vector<std::thread> threads;
-    for (int i = 0; i < NUM_ORDERS; ++i) {
-        // Asynchronously place via threads
-        threads.emplace_back([&orderMgr, order = stressOrders[i]]() {
-            if (order) {
-                orderMgr.placeOrder(order);
+
+    int num_dispatch_threads = 4;
+    std::vector<std::thread> dispatchThreads;
+    int orders_per_thread = NUM_ORDERS / num_dispatch_threads;
+
+    for (int t = 0; t < num_dispatch_threads; ++t) {
+        int startIdx = t * orders_per_thread;
+        int endIdx = (t == num_dispatch_threads - 1) ? NUM_ORDERS : (t + 1) * orders_per_thread;
+
+        dispatchThreads.emplace_back([&orderMgr, &stressOrders, startIdx, endIdx]() {
+            for (int i = startIdx; i < endIdx; ++i) {
+                orderMgr.placeOrder(stressOrders[i]);
             }
         });
     }
 
-    for (auto &t : threads) {
+    for (auto &t : dispatchThreads) {
         t.join();
     }
 
     auto endTime = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    addTuiLog("Stress test: Dispatched 1000 orders in " + std::to_string(duration) + " ms. Matching trades...");
 
+    // 4. Poll until all dispatched orders are processed and thread pool is idle
+    while (true) {
+        if (MetricsCollector::getInstance().getTotalOrdersProcessed() >= (unsigned long long)NUM_ORDERS &&
+            MetricsCollector::getInstance().getActiveThreads() == 0) {
+            MetricsCollector::getInstance().stopTimer();
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+    }
+
+    double totalMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
+    auto &collector = MetricsCollector::getInstance();
     std::ostringstream ss;
-    ss << "Stress test finished: " << NUM_ORDERS << " orders in " << duration << " ms (" 
-       << std::fixed << std::setprecision(2) << (static_cast<double>(NUM_ORDERS) / (duration / 1000.0)) << " orders/sec)";
+    ss << "Stress test finished: " << NUM_ORDERS << " orders in " << std::fixed << std::setprecision(1) << totalMs << " ms (" 
+       << static_cast<unsigned long long>(collector.getOrdersProcessedPerSec()) << " orders/sec) | Avg Latency: " 
+       << std::fixed << std::setprecision(1) << (collector.getAvgMatchLatencyMs() * 1000.0) << " us";
     addTuiLog(ss.str());
 }
 
@@ -200,7 +224,7 @@ void launchTUI(OrderManager &orderMgr) {
         }
     });
 
-    Component btn_stress_test = Button("Trigger 100-Order Stress Test", [&]() {
+    Component btn_stress_test = Button("Trigger 1,000-Order Stress Test", [&]() {
         std::thread([&]() {
             runStressTestTUI(orderMgr);
         }).detach();
@@ -456,15 +480,53 @@ void launchTUI(OrderManager &orderMgr) {
 
 #ifdef ENABLE_METRICS
                 auto& collector = MetricsCollector::getInstance();
-                std::ostringstream ss_ops, ss_mps, ss_lat;
-                ss_ops << std::fixed << std::setprecision(2) << collector.getOrdersProcessedPerSec();
-                ss_mps << std::fixed << std::setprecision(2) << collector.getMatchesPerSec();
-                ss_lat << std::fixed << std::setprecision(4) << collector.getAvgMatchLatencyMs();
+                
+                auto formatWithCommas = [](unsigned long long value) -> std::string {
+                    std::string numStr = std::to_string(value);
+                    int insertPos = static_cast<int>(numStr.length()) - 3;
+                    while (insertPos > 0) {
+                        numStr.insert(insertPos, ",");
+                        insertPos -= 3;
+                    }
+                    return numStr;
+                };
 
-                metric_elements.push_back(hbox(text("Orders Processed/sec:  ") | size(WIDTH, EQUAL, 25), text(ss_ops.str() + " /s") | bold));
-                metric_elements.push_back(hbox(text("Average Matches/sec:   ") | size(WIDTH, EQUAL, 25), text(ss_mps.str() + " /s") | bold));
-                metric_elements.push_back(hbox(text("Active Worker Threads: ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getActiveThreads()) + " active (out of 4 threads)") | bold));
-                metric_elements.push_back(hbox(text("Avg Matching Latency:  ") | size(WIDTH, EQUAL, 25), text(ss_lat.str() + " ms") | bold));
+                // Read percentiles
+                double median = 0.0, p95 = 0.0, p99 = 0.0;
+                auto sortedLatencies = collector.getSortedLatencies();
+                double avgLatencyUs = (sortedLatencies.empty()) ? 0.0 : (collector.getAvgMatchLatencyMs() * 1000.0);
+                if (!sortedLatencies.empty()) {
+                    size_t n = sortedLatencies.size();
+                    median = sortedLatencies[n * 50 / 100] / 1000.0;
+                    p95 = sortedLatencies[n * 95 / 100] / 1000.0;
+                    p99 = sortedLatencies[n * 99 / 100] / 1000.0;
+                }
+
+                metric_elements.push_back(hbox(text("Orders Submitted:      ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getTotalOrdersSubmitted())) | bold));
+                metric_elements.push_back(hbox(text("Orders Executed:       ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getTotalOrdersProcessed())) | bold));
+                metric_elements.push_back(hbox(text("Trades Generated:      ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getTotalMatches())) | bold));
+                metric_elements.push_back(separator());
+
+                metric_elements.push_back(hbox(text("Throughput:            ") | size(WIDTH, EQUAL, 25), text(formatWithCommas(static_cast<unsigned long long>(collector.getOrdersProcessedPerSec())) + " orders/sec") | bold));
+                
+                std::ostringstream ss_avg, ss_med, ss_p95, ss_p99;
+                ss_avg << std::fixed << std::setprecision(1) << avgLatencyUs;
+                ss_med << std::fixed << std::setprecision(1) << median;
+                ss_p95 << std::fixed << std::setprecision(1) << p95;
+                ss_p99 << std::fixed << std::setprecision(1) << p99;
+
+                metric_elements.push_back(hbox(text("Average Match Latency: ") | size(WIDTH, EQUAL, 25), text(ss_avg.str() + " us") | bold));
+                metric_elements.push_back(hbox(text("Median Latency:        ") | size(WIDTH, EQUAL, 25), text(ss_med.str() + " us") | bold));
+                metric_elements.push_back(hbox(text("P95 Latency:           ") | size(WIDTH, EQUAL, 25), text(ss_p95.str() + " us") | bold));
+                metric_elements.push_back(hbox(text("P99 Latency:           ") | size(WIDTH, EQUAL, 25), text(ss_p99.str() + " us") | bold));
+                metric_elements.push_back(separator());
+
+                metric_elements.push_back(hbox(text("Worker Threads:        ") | size(WIDTH, EQUAL, 25), text("4 (out of 4 threads)") | bold));
+                
+                std::ostringstream ss_util;
+                ss_util << std::fixed << std::setprecision(0) << collector.getCpuUtilization();
+                metric_elements.push_back(hbox(text("CPU Utilization:       ") | size(WIDTH, EQUAL, 25), text(ss_util.str() + "%") | bold));
+                metric_elements.push_back(hbox(text("Peak Queue Size:       ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getPeakQueueSize())) | bold));
 #else
                 metric_elements.push_back(text("Metrics Disabled. Please compile with ENABLE_METRICS toggled ON."));
 #endif
@@ -487,7 +549,7 @@ void launchTUI(OrderManager &orderMgr) {
                             text("Stress Testing Controls") | bold | color(Color::Red),
                             separator(),
                             btn_stress_test->Render() | center,
-                            text("Pushes 100 random Buy/Sell orders into queues concurrently") | color(Color::GrayLight) | center
+                            text("Pushes 1,000 random Buy/Sell orders into queues concurrently using 4 threads") | color(Color::GrayLight) | center
                         }) | flex | border
                     }),
                     vbox(log_lines) | border | size(HEIGHT, EQUAL, 10)

@@ -70,6 +70,17 @@ public:
         while (currentSize > prev && !_peakQueueSize.compare_exchange_weak(prev, currentSize, std::memory_order_relaxed));
     }
 
+    unsigned long long getTotalOrdersSubmitted() const {
+        return _totalOrdersSubmitted.load(std::memory_order_relaxed);
+    }
+
+    std::vector<double> getSortedLatencies() const {
+        std::lock_guard<std::mutex> lock(_latenciesMtx);
+        auto copy = _latencies;
+        std::sort(copy.begin(), copy.end());
+        return copy;
+    }
+
     size_t getPeakQueueSize() const {
         return _peakQueueSize.load(std::memory_order_relaxed);
     }
