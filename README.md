@@ -37,165 +37,42 @@
   ```bash
   ./Engine.exe 
   ```
-- Once executed, the CLI menu will appear for user interaction.
-  
-## Usage
-Once the application is running, the main menu will be displayed:
-1) Add User  
-2) Add Order  
-3) View Stocks  
-4) View Order Book  
-5) View Users  
-6) View Orders  
-7) Executed Orders  
-8) Exit  
-9) Performance Metrics (Only available when compiled with ENABLE_METRICS)
 
-## Example Workflow
-Here is an example of the flow and output of the application:
+### Usage & Navigation
+When you start the application, it launches in fullscreen terminal user interface (TUI) mode.
 
-1. Starting the application:
+### Controls:
+*   **Switch Navigation Tabs**: Use the `Left` and `Right` arrow keys while focus is on the top menu bar.
+*   **Cycle Control Focus**: Use the `Tab` key to move forward through forms, dropdowns, and buttons. Use `Shift+Tab` to cycle backward.
+*   **Select Options**: Use the `Up` and `Down` arrow keys to change choices in dropdowns or radio lists, and press `Enter` to expand or select.
+*   **Input Text**: Focus on input boxes (like Username, Quantity, Price) and type directly.
+*   **Execute Buttons**: Focus on buttons (like "Submit Order" or "Trigger Stress Test") and press `Enter` or click them.
 
-```bash
-Starting the application...
--->> Placing concurrent system orders
--->> All system orders placed
+---
 
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8):
-```
-2. Adding a new user:
+### Dashboard Tabs Guide
 
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 1
-
-Please enter a username to create a new user 
-> Anuj
-Creating user...
-User 'Anuj' has been successfully created
-```
-
-3. Viewing Available Stocks:
-
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 3
-
-------------------- Stocks ---------------------
-Symbol         Total Quantity    Current Price
-------------------------------------------------
-GOOGL          10000             1000.00
-BABA           10000             777.00
-APPLE          10000             888.00
-TCS            10000             999.00
-------------------------------------------------
-```
-
-4. Viewing the Order Book:
-
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 4
-
-Enter the stock symbol (TCS, APPLE, GOOGL, BABA): TCS
-
-======================= Order Book for Stock: TCS ====================
-Qty         Bid             |             Ask         Qty
-----------------------------------------------------------------------
-2           998.00          |          999.00       10000
-1           993.00          |
-2           900.00          |
-======================================================================
-```
-
-5. Viewing Registered Users:
-
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 5
-
------------------- Users ------------------
-Username       Funds          Demat Holdings
----------------------------------------------
-User5          6892.00        BABA:4
-User3          10000.00       None
-User2          8224.00        APPLE:2
-User4          10000.00       None
-User1          10000.00       None
----------------------------------------------
-```
-
-6. Placing an Order:
-
-i. MARKET ORDER
-
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 2
-
------ Place a New Order -----
-Enter Username: Anuj
-Enter Stock Symbol (TCS, BABA, GOOGL, APPLE): TCS
-Enter Quantity: 3
-Enter Price per Unit: 888
-Is this a Buy Order? (Enter 1 for Buy or 0 for Sell): 1
-Enter the Order Type (MARKET or LIMIT): MARKET
-Order placed successfully for user 'Anuj' [Buy 3 of TCS @ 888.00 Rs ]
-```
-ii. LIMIT ORDER
-
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 2
-
-
------ Place a New Order ----- 
-Enter Username: Anuj
-Enter Stock Symbol (TCS, BABA, GOOGL, APPLE): TCS
-Enter Quantity: 4
-Enter Price per Unit: 888
-Is this a Buy Order? (Enter 1 for Buy or 0 for Sell): 1
-Enter the Order Type (MARKET or LIMIT): LIMIT
-Enter the Order Expiry Type (DAY, GTC, GTD): GTD
-Enter GTD expiry date (DD-MM-YYYY): 04-12-2025
-Order placed successfully for user 'Anuj' [Buy 4 of TCS @ 888.00 Rs ]
-```
-
-7. Viewing Executed Orders:
-
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 7
-
------------------------ All Executed Orders ----------------------------
-OrderID        Symbol         ExecutedQty    Timestamp
-------------------------------------------------------------------------
-2              APPLE          2              Sat May  3 03:37:04 2025
-6              APPLE          2              Sat May  3 03:37:04 2025
-3              BABA           4              Sat May  3 03:37:04 2025
-8              BABA           4              Sat May  3 03:37:04 2025
-
--------------------------------------------------------------------------
-```
-
+1.  **Dashboard Tab**:
+    *   **Stock Directory**: Lists all available stocks, current market prices, and total available share quantities.
+    *   **User Portfolios**: Scroll through the list of users (`User1` to `User5` or any custom users) to instantly view their current cash balances and demat holdings.
+2.  **Live Order Books Tab**:
+    *   Select any stock ticker (TCS, APPLE, BABA, GOOGL) from the dropdown filter to view its live, side-by-side **Bid (Buy)** vs. **Ask (Sell)** order queues.
+3.  **Place Order Tab**:
+    *   **Form**: Place Limit or Market buy/sell orders. Input a username, select the stock, quantity, and price.
+    *   **Register Account**: Register a new trading username with `10,000` Rs start-up funds.
+4.  **Ledger & Logs Tab**:
+    *   **All Placed Orders**: A running list of all orders submitted to the matching engine, showing their pending/executed quantities.
+    *   **All Executed Trades**: Real-time transaction history showing the order ID, stock symbol, matched quantity, and transaction timestamp.
+5.  **Diagnostics Tab**:
+    *   **Metrics Panel**: Displays live throughput stats:
+        *   **Orders Processed/sec**: Processing rate of the execution queues.
+        *   **Average Matches/sec**: Trade execution rate.
+        *   **Active Worker Threads**: Current active pool threads matching orders.
+        *   **Avg Match Latency**: Average time spent running matching logic (in milliseconds).
+    *   **Stress Testing**: Click "Trigger 100-Order Stress Test" to launch 100 concurrent threads placing random orders simultaneously. Watch the diagnostic metrics update in real time.
 8. View Orders Placed
 
-```bash
-1) Add User  2) Add Order  3) View Stocks  4) View Order Book 5) View Users  6) View Orders  7) Executed Orders  8) Exit
-Select an option (1-8): 6
-
------ All Orders made -----
-OrderId        Symbol    Qty       Price     Trade     Type      Expiry                   ExecutedQty    Username
----------------------------------------------------------------------------------------------------------------------------------------
-10             TCS       2         900       BUY       LIMIT     04-05-2025 04:08:01      0              User3
-6              APPLE     2         999       BUY       LIMIT     04-05-2025 04:08:01      2              User2
-7              GOOGL     3         999       BUY       LIMIT     04-05-2025 04:08:01      0              User4
-5              TCS       1         993       BUY       LIMIT     04-05-2025 04:08:01      0              User1
-9              TCS       2         998       BUY       LIMIT     04-05-2025 04:08:01      0              User1
-8              BABA      4         999       BUY       LIMIT     04-05-2025 04:08:01      4              User5
----------------------------------------------------------------------------------------------------------------------------------------
-```
+# TODO: UI GIF to be added
 
 ## Key Commands & Options
 1) Add User: Creates a new user in the system.
