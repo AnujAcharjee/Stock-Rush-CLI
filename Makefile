@@ -5,7 +5,7 @@ SRC = $(wildcard cppsrc/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 TARGET = Engine
 
-.PHONY: all clean
+.PHONY: all clean metrics
 
 # Default target to build
 all: $(TARGET)
@@ -14,6 +14,10 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CXX) $(OBJ) -o $(TARGET) -pthread -Wl,--subsystem,console
 
+# Build target with metrics enabled
+metrics: CXXFLAGS += -DENABLE_METRICS
+metrics: clean all
+
 # Rule for compiling individual .cpp files to .o files
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -21,3 +25,4 @@ $(TARGET): $(OBJ)
 # Clean up the object files and target executable
 clean:
 	rm -f $(OBJ) $(TARGET)
+

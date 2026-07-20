@@ -7,6 +7,11 @@
 #include <queue>
 #include <condition_variable>
 #include <future>
+#include <type_traits>
+
+#ifdef ENABLE_METRICS
+#include "metricsCollector.hpp"
+#endif
 
 using namespace std;
 
@@ -29,7 +34,19 @@ public:
         auto task = packaged_task<ReturnType()>(
             [func = forward<F>(f), ... args = forward<Args>(args)]() mutable
             {
+#ifdef ENABLE_METRICS
+                MetricsCollector::getInstance().incrementActiveThreads();
+                if constexpr (is_void_v<ReturnType>) {
+                    func(move(args)...);
+                    MetricsCollector::getInstance().decrementActiveThreads();
+                } else {
+                    auto res = func(move(args)...);
+                    MetricsCollector::getInstance().decrementActiveThreads();
+                    return res;
+                }
+#else
                 return func(move(args)...);
+#endif
             });
 
         future<ReturnType> result = task.get_future();

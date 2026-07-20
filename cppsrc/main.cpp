@@ -12,6 +12,10 @@
 #include "orderManager.hpp"
 #include "store.hpp"
 
+#ifdef ENABLE_METRICS
+#include "metricsCollector.hpp"
+#endif
+
 using namespace std;
 
 void processOrder(OrderManager &orderMgr, shared_ptr<Order> order) {
@@ -256,9 +260,15 @@ int main() {
     bool stop = false;
     while (!stop) {
         cout << '\n';
+#ifdef ENABLE_METRICS
+        cout << "1) Add User  2) Add Order  3) View Stocks  4) View Order Book "
+             << "5) View Users  6) View Orders  7) Executed Orders  8) Exit  9) Performance Metrics\n";
+        cout << "Select an option (1-9): ";
+#else
         cout << "1) Add User  2) Add Order  3) View Stocks  4) View Order Book "
              << "5) View Users  6) View Orders  7) Executed Orders  8) Exit\n";
         cout << "Select an option (1-8): ";
+#endif
 
         int res;
         cin >> res;
@@ -266,7 +276,11 @@ int main() {
         if (cin.fail()) {
             cin.clear();                                         
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
+#ifdef ENABLE_METRICS
+            cout << "Invalid input. Please enter a number between 1 and 9.\n";
+#else
             cout << "Invalid input. Please enter a number between 1 and 8.\n";
+#endif
             continue;
         }
 
@@ -306,8 +320,18 @@ int main() {
                 stop = true;
                 break;
 
+#ifdef ENABLE_METRICS
+            case 9:
+                MetricsCollector::getInstance().printMetrics();
+                break;
+#endif
+
             default:
+#ifdef ENABLE_METRICS
+                cout << "Invalid option. Please choose between 1 and 9.\n";
+#else
                 cout << "Invalid option. Please choose between 1 and 8.\n";
+#endif
                 break;
         }
     }

@@ -1,5 +1,9 @@
 #include "orderExecutioner.hpp"
 
+#ifdef ENABLE_METRICS
+#include "metricsCollector.hpp"
+#endif
+
 thread OrderExecutioner::_buyProcessingThread;
 thread OrderExecutioner::_sellProcessingThread;
 atomic<bool> OrderExecutioner::_isBuyProcessing{true};
@@ -49,6 +53,9 @@ void OrderExecutioner::checkExecutionQueue(QueueType &executionQueue, CVType &cv
                     try {
                         pop_order = executionQueue.top();
                         executionQueue.pop();
+#ifdef ENABLE_METRICS
+                        get_tl_metrics().addOrder();
+#endif
                     } catch (const exception &e) {
                         cerr << "Error popping from " << queueType << " execution queue: " << e.what() << "\n";
                         continue;
@@ -107,7 +114,17 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
 
             unique_lock<mutex> stockLock(*mutex_ptr);
 
+#ifdef ENABLE_METRICS
+            auto start = std::chrono::steady_clock::now();
+#endif
             accumulatedOrders = orderBook->matchOrder_OrderBook(orderPtr);
+#ifdef ENABLE_METRICS
+            if (!accumulatedOrders.empty()) {
+                auto end = std::chrono::steady_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                get_tl_metrics().addMatch(duration);
+            }
+#endif
             if (accumulatedOrders.empty())
                 return;
 

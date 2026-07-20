@@ -9,6 +9,7 @@
 - View the available stocks with their prices
 - View the order book with buy and sell orders
 - View all placed orders, executed orders, and registered users
+- Performance statistics tracking (orders/sec, matches/sec, thread pool activity, average latency)
 
 ### Prerequisites & Setup
 - Clone the repository:
@@ -23,10 +24,18 @@
   ```bash
   make
   ```
-- After successful compilation, the executable `engine.exe` will be available and ready to run.
+- Compile the engine with performance metrics enabled:
+  ```bash
+  # Using Makefile
+  make metrics
+
+  # Or compiling directly with g++ (e.g. if 'rm' is not available on Windows)
+  g++ -std=c++23 -DENABLE_METRICS -g -Wall -Wextra -pthread cppsrc/*.cpp -o Engine
+  ```
+- After successful compilation, the executable `Engine.exe` (or `Engine`) will be available and ready to run.
 - Run the application via your terminal:
   ```bash
-  ./engine.exe 
+  ./Engine.exe 
   ```
 - Once executed, the CLI menu will appear for user interaction.
   
@@ -39,7 +48,8 @@ Once the application is running, the main menu will be displayed:
 5) View Users  
 6) View Orders  
 7) Executed Orders  
-8) Exit
+8) Exit  
+9) Performance Metrics (Only available when compiled with ENABLE_METRICS)
 
 ## Example Workflow
 Here is an example of the flow and output of the application:
@@ -203,3 +213,9 @@ OrderId        Symbol    Qty       Price     Trade     Type      Expiry         
 7) Executed Orders: Lists all orders that have been successfully executed.
 
 8) Exit: Closes the application.
+
+9) Performance Metrics: Displays execution statistics including:
+   * **Orders Processed/sec**: Rate of processing order requests from the execution queue.
+   * **Average Matches/sec**: Rate of matching buy and sell orders.
+   * **Active Worker Threads**: Current count of pool threads actively running.
+   * **Avg Match Latency**: Average time spent executing order matching logic (in milliseconds).
