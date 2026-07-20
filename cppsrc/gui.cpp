@@ -136,6 +136,7 @@ void launchTUI(OrderManager &orderMgr) {
         "Dashboard",
         "Order Books",
         "Place Order",
+        "Register User",
         "Ledger & Logs",
         "Diagnostics"
     };
@@ -250,7 +251,10 @@ void launchTUI(OrderManager &orderMgr) {
         comp_input_price,
         comp_side_radio,
         comp_type_radio,
-        btn_place_order,
+        btn_place_order
+    });
+
+    auto register_user_container = Container::Vertical({
         comp_input_new_user,
         btn_create_user
     });
@@ -393,29 +397,31 @@ void launchTUI(OrderManager &orderMgr) {
 
             // Tab 2: Place Order Form
             Renderer(place_order_container, [&]() {
-                return hbox({
-                    vbox({
-                        text("PLACE NEW TRADING ORDER") | bold | color(Color::Green),
-                        separator(),
-                        hbox(text("Username:      ") | size(WIDTH, EQUAL, 15), comp_input_user->Render() | border),
-                        hbox(text("Stock Ticker:  ") | size(WIDTH, EQUAL, 15), comp_stock_dropdown->Render()),
-                        hbox(text("Quantity:      ") | size(WIDTH, EQUAL, 15), comp_input_qty->Render() | border),
-                        hbox(text("Price (Rs):    ") | size(WIDTH, EQUAL, 15), comp_input_price->Render() | border),
-                        hbox(text("Side:          ") | size(WIDTH, EQUAL, 15), comp_side_radio->Render()),
-                        hbox(text("Type:          ") | size(WIDTH, EQUAL, 15), comp_type_radio->Render()),
-                        separator(),
-                        btn_place_order->Render() | center,
-                        text(order_feedback) | color(Color::Yellow) | center
-                    }) | flex | border,
-                    vbox({
-                        text("REGISTER NEW ACCOUNT") | bold | color(Color::Cyan),
-                        separator(),
-                        hbox(text("Username:      ") | size(WIDTH, EQUAL, 15), comp_input_new_user->Render() | border),
-                        separator(),
-                        btn_create_user->Render() | center,
-                        text(user_feedback) | color(Color::Yellow) | center
-                    }) | flex | border
-                });
+                return vbox({
+                    text("PLACE NEW TRADING ORDER") | bold | color(Color::Green),
+                    separator(),
+                    hbox(text("Username:      ") | size(WIDTH, EQUAL, 15), comp_input_user->Render() | border),
+                    hbox(text("Stock Ticker:  ") | size(WIDTH, EQUAL, 15), comp_stock_dropdown->Render()),
+                    hbox(text("Quantity:      ") | size(WIDTH, EQUAL, 15), comp_input_qty->Render() | border),
+                    hbox(text("Price (Rs):    ") | size(WIDTH, EQUAL, 15), comp_input_price->Render() | border),
+                    hbox(text("Side:          ") | size(WIDTH, EQUAL, 15), comp_side_radio->Render()),
+                    hbox(text("Type:          ") | size(WIDTH, EQUAL, 15), comp_type_radio->Render()),
+                    separator(),
+                    btn_place_order->Render() | center,
+                    text(order_feedback) | color(Color::Yellow) | center
+                }) | border;
+            }),
+
+            // Tab 3: Register User Form
+            Renderer(register_user_container, [&]() {
+                return vbox({
+                    text("REGISTER NEW ACCOUNT") | bold | color(Color::Cyan),
+                    separator(),
+                    hbox(text("Username:      ") | size(WIDTH, EQUAL, 15), comp_input_new_user->Render() | border),
+                    separator(),
+                    btn_create_user->Render() | center,
+                    text(user_feedback) | color(Color::Yellow) | center
+                }) | border;
             }),
 
             // Tab 3: Ledger & Logs
