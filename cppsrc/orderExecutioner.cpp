@@ -55,6 +55,9 @@ void OrderExecutioner::checkExecutionQueue(QueueType &executionQueue, CVType &cv
                         executionQueue.pop();
 #ifdef ENABLE_METRICS
                         get_tl_metrics().addOrder();
+                        if (executionQueue.empty()) {
+                            get_tl_metrics().flush();
+                        }
 #endif
                     } catch (const exception &e) {
                         cerr << "Error popping from " << queueType << " execution queue: " << e.what() << "\n";
@@ -125,11 +128,18 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
                 get_tl_metrics().addMatch(duration);
             }
 #endif
-            if (accumulatedOrders.empty())
+            if (accumulatedOrders.empty()) {
+#ifdef ENABLE_METRICS
+                get_tl_metrics().flush();
+#endif
                 return;
+            }
 
         } catch (const exception &e) {
             cerr << "Error executing order " << orderPtr->getOrderId() << ": " << e.what() << "\n";
+#ifdef ENABLE_METRICS
+            get_tl_metrics().flush();
+#endif
             return;
         }
 
@@ -189,6 +199,9 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
     } catch (const exception &e) {
         cerr << "Error executing order: " << e.what() << "\n";
     }
+#ifdef ENABLE_METRICS
+    get_tl_metrics().flush();
+#endif
 }
 
 OrderExecutioner::~OrderExecutioner() {
