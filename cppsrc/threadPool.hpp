@@ -36,11 +36,18 @@ public:
             {
 #ifdef ENABLE_METRICS
                 MetricsCollector::getInstance().incrementActiveThreads();
+                auto start = std::chrono::steady_clock::now();
                 if constexpr (is_void_v<ReturnType>) {
                     func(move(args)...);
+                    auto end = std::chrono::steady_clock::now();
+                    auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    MetricsCollector::getInstance().addActiveCpuTime(durationNs);
                     MetricsCollector::getInstance().decrementActiveThreads();
                 } else {
                     auto res = func(move(args)...);
+                    auto end = std::chrono::steady_clock::now();
+                    auto durationNs = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    MetricsCollector::getInstance().addActiveCpuTime(durationNs);
                     MetricsCollector::getInstance().decrementActiveThreads();
                     return res;
                 }

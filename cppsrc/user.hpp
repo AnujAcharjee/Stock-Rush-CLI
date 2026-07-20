@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <mutex>
 
 #include "common.hpp"
 
@@ -8,6 +9,7 @@ class User
     string _username;
     double _funds;
     unordered_map<string, int> _demat;
+    mutable std::mutex _mtx;
 
   public:
     User(string username, double funds);

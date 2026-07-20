@@ -38,7 +38,7 @@ void OrderExecutioner::checkExecutionQueue(QueueType &executionQueue, CVType &cv
     processingThread = thread([this, &executionQueue, &cv, queueType]() {
         try {
             while (isProcessing) {
-                unique_lock<mutex> processingThreadLock(queueType == "buy" ? Mtx_buyThread : Mtx_sellThread);
+                unique_lock<mutex> processingThreadLock(queueType == "buy" ? OrderManager::Mtx_buyQ : OrderManager::Mtx_sellQ);
 
                 cv.wait(processingThreadLock, [&]() {
                     return !executionQueue.empty() || !isProcessing;
@@ -165,9 +165,7 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
             if (user) {
                 if (matchedOrder->getIsBuy()) {
                     user->deductFunds(price);
-                    cout << "Fund deducted \n";
                     user->addToDemat(m_order_symbol, matchedQty);
-                    cout << "Stock added to demat \n";
                 } else {
                     user->addFunds(price);
                     user->deductDemat(m_order_symbol, matchedQty);

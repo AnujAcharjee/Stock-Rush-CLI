@@ -6,18 +6,22 @@ using namespace std;
 User::User(string username, double funds) : _username(username), _funds(funds) {};
 
 string User::getUsername() const {
+    std::lock_guard<std::mutex> lock(_mtx);
     return _username;
 };
 
 double User::getFunds() const {
+    std::lock_guard<std::mutex> lock(_mtx);
     return _funds;
 };
 
 const unordered_map<string, int> &User::getDemat() const {
+    std::lock_guard<std::mutex> lock(_mtx);
     return _demat;
 }
 
 int User::getStockQty_in_demat(const string &symbol) const {
+    std::lock_guard<std::mutex> lock(_mtx);
     auto it = _demat.find(symbol);
     if (it != _demat.end()) {
         return it->second;
@@ -26,20 +30,24 @@ int User::getStockQty_in_demat(const string &symbol) const {
 }
 
 void User::addFunds(double amount) {
+    std::lock_guard<std::mutex> lock(_mtx);
     _funds += amount;
 };
 
 void User::deductFunds(double amount) {
+    std::lock_guard<std::mutex> lock(_mtx);
     if (_funds < amount)
         return;
     _funds -= amount;
 };
 
 void User::addToDemat(const string &symbol, int qty) {
+    std::lock_guard<std::mutex> lock(_mtx);
     _demat[symbol] += qty;
 }
 
 void User::deductDemat(const string &symbol, int qty) {
+    std::lock_guard<std::mutex> lock(_mtx);
     auto it = _demat.find(symbol);
     if (it == _demat.end()) {
         throw runtime_error("The stock of the requested symbol " + symbol + " can't be found in user demat");
@@ -58,6 +66,7 @@ void User::deductDemat(const string &symbol, int qty) {
 }
 
 void User::printDemat() const {
+    std::lock_guard<std::mutex> lock(_mtx);
     for (const auto &item : _demat) {
         cout << "Stock: " << item.first << ", Quantity: " << item.second << "\n";
     }

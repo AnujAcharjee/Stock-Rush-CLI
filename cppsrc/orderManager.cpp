@@ -23,16 +23,25 @@ void OrderManager::setOrderInQueue(shared_ptr<Order> order) {
         unique_lock<mutex> lock(Mtx_buyQ);
 
         _BuyExecutionQueue.push(order);
+#ifdef ENABLE_METRICS
+        MetricsCollector::getInstance().updatePeakQueueSize(_BuyExecutionQueue.size() + _SellExecutionQueue.size());
+#endif
         CV_buyProcessing.notify_one();
     } else {
         unique_lock<mutex> lock(Mtx_sellQ);
 
         _SellExecutionQueue.push(order);
+#ifdef ENABLE_METRICS
+        MetricsCollector::getInstance().updatePeakQueueSize(_BuyExecutionQueue.size() + _SellExecutionQueue.size());
+#endif
         CV_sellProcessing.notify_one();
     }
 }
 
 bool OrderManager::placeOrder(shared_ptr<Order> orderPtr) {
+#ifdef ENABLE_METRICS
+    MetricsCollector::getInstance().incrementOrdersSubmitted();
+#endif
     const auto symbol = orderPtr->getSymbol();
 
     bool isValid = _validator->validateOrder(orderPtr);
