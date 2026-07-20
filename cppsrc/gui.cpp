@@ -16,6 +16,7 @@
 #include <random>
 #include <iomanip>
 #include <sstream>
+#include <algorithm>
 
 using namespace ftxui;
 
@@ -38,7 +39,10 @@ void runStressTestTUI(OrderManager &orderMgr) {
 
     // 1. Boost user balances and holdings to prevent validation rejections
     std::vector<std::string> usernames = {"User1", "User2", "User3", "User4", "User5"};
-    std::vector<std::string> stocks = {"TCS", "APPLE", "BABA", "GOOGL"};
+    std::vector<std::string> stocks;
+    for (const auto& [symbol, stockPtr] : Store::getStocksMap()) {
+        stocks.push_back(symbol);
+    }
     
     for (const auto &name : usernames) {
         auto user = Store::getUser(name);
@@ -121,7 +125,11 @@ void launchTUI(OrderManager &orderMgr) {
     std::string input_qty = "5";
     std::string input_price = "990";
     int selected_stock = 0;
-    std::vector<std::string> stocks_list = {"TCS", "APPLE", "BABA", "GOOGL"};
+    std::vector<std::string> stocks_list;
+    for (const auto& [symbol, stockPtr] : Store::getStocksMap()) {
+        stocks_list.push_back(symbol);
+    }
+    std::sort(stocks_list.begin(), stocks_list.end());
     int selected_side = 0; // Buy / Sell
     std::vector<std::string> sides = {"Buy", "Sell"};
     int selected_type = 0; // Limit / Market

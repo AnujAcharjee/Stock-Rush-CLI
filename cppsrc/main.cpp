@@ -212,13 +212,119 @@ int main() {
     }
 
     try {
-        // Add more Stock here (if needed)
-        Store::addStocks("TCS", 999, 10000);
-        Store::addStocks("APPLE", 888, 10000);
-        Store::addStocks("BABA", 777, 10000);
-        Store::addStocks("GOOGL", 1000, 10000);
+        struct StockInit {
+            string symbol;
+            float price;
+            int qty;
+        };
+        vector<StockInit> init_stocks = {
+            {"AAPL", 225.0f, 10000},
+            {"MSFT", 415.0f, 10000},
+            {"NVDA", 125.0f, 10000},
+            {"GOOGL", 165.0f, 10000},
+            {"AMZN", 185.0f, 10000},
+            {"META", 495.0f, 10000},
+            {"TSLA", 210.0f, 10000},
+            {"BRK.B", 445.0f, 10000},
+            {"LLY", 810.0f, 10000},
+            {"AVGO", 155.0f, 10000},
+            {"JPM", 205.0f, 10000},
+            {"V", 275.0f, 10000},
+            {"UNH", 520.0f, 10000},
+            {"XOM", 115.0f, 10000},
+            {"MA", 460.0f, 10000},
+            {"JNJ", 160.0f, 10000},
+            {"PG", 165.0f, 10000},
+            {"WMT", 68.0f, 10000},
+            {"HD", 360.0f, 10000},
+            {"CVX", 155.0f, 10000},
+            {"NFLX", 640.0f, 10000},
+            {"MRK", 120.0f, 10000},
+            {"AMD", 150.0f, 10000},
+            {"KO", 65.0f, 10000},
+            {"PEP", 165.0f, 10000},
+            {"ADBE", 530.0f, 10000},
+            {"COST", 810.0f, 10000},
+            {"ORCL", 140.0f, 10000},
+            {"CRM", 240.0f, 10000},
+            {"ACN", 310.0f, 10000},
+            {"CSCO", 46.0f, 10000},
+            {"MCD", 265.0f, 10000},
+            {"INTC", 30.0f, 10000},
+            {"CMCSA", 38.0f, 10000},
+            {"PFE", 28.0f, 10000},
+            {"DIS", 95.0f, 10000},
+            {"NKE", 75.0f, 10000},
+            {"VZ", 41.0f, 10000},
+            {"T", 18.0f, 10000},
+            {"IBM", 190.0f, 10000},
+            {"QCOM", 175.0f, 10000},
+            {"HON", 200.0f, 10000},
+            {"BA", 170.0f, 10000},
+            {"CAT", 340.0f, 10000},
+            {"GS", 480.0f, 10000},
+            {"MS", 98.0f, 10000},
+            {"AMGN", 315.0f, 10000},
+            {"UNP", 230.0f, 10000},
+            {"SBUX", 78.0f, 10000},
+            {"LOW", 235.0f, 10000},
+            {"ISRG", 430.0f, 10000},
+            {"GE", 165.0f, 10000},
+            {"UBER", 70.0f, 10000},
+            {"ABNB", 145.0f, 10000},
+            {"BKNG", 3900.0f, 10000},
+            {"BX", 135.0f, 10000},
+            {"TGT", 145.0f, 10000},
+            {"F", 11.0f, 10000},
+            {"GM", 45.0f, 10000},
+            {"FDX", 290.0f, 10000},
+            {"UPS", 135.0f, 10000},
+            {"PYPL", 62.0f, 10000},
+            {"SQ", 65.0f, 10000},
+            {"SHOP", 68.0f, 10000},
+            {"SPOT", 310.0f, 10000},
+            {"ZM", 60.0f, 10000},
+            {"SNOW", 125.0f, 10000},
+            {"PLTR", 28.0f, 10000},
+            {"CRWD", 260.0f, 10000},
+            {"PANW", 330.0f, 10000},
+            {"DDOG", 115.0f, 10000},
+            {"COIN", 220.0f, 10000},
+            {"HOOD", 22.0f, 10000},
+            {"SNAP", 10.0f, 10000},
+            {"PINS", 38.0f, 10000},
+            {"TWLO", 58.0f, 10000},
+            {"U", 18.0f, 10000},
+            {"RBLX", 36.0f, 10000},
+            {"ETSY", 60.0f, 10000},
+            {"EBAY", 52.0f, 10000},
+            {"HPQ", 35.0f, 10000},
+            {"DELL", 130.0f, 10000},
+            {"NTAP", 120.0f, 10000},
+            {"STX", 98.0f, 10000},
+            {"WDC", 72.0f, 10000},
+            {"MU", 115.0f, 10000},
+            {"AMAT", 220.0f, 10000},
+            {"LRCX", 950.0f, 10000},
+            {"ASML", 920.0f, 10000},
+            {"TSM", 165.0f, 10000},
+            {"SONY", 82.0f, 10000},
+            {"NTDOY", 13.0f, 10000},
+            {"TM", 205.0f, 10000},
+            {"HMC", 32.0f, 10000},
+            {"SHEL", 72.0f, 10000},
+            {"BP", 35.0f, 10000},
+            {"TTE", 68.0f, 10000},
+            {"TCS", 999.0f, 10000},
+            {"RELIANCE", 1250.0f, 10000},
+            {"BABA", 777.0f, 10000}
+        };
+
+        for (const auto& s : init_stocks) {
+            Store::addStocks(s.symbol, s.price, s.qty);
+        }
     } catch (const exception &e) {
-        cerr << "Error: in addStocks in main" << e.what() << "\n";
+        cerr << "Error: in addStocks in main: " << e.what() << "\n";
     }
 
     OrderExecutioner::getExecutionerInstance();
@@ -237,7 +343,7 @@ int main() {
 
     // Create Default Orders here - (stock, orderType, isBuy, order_price_pre_stock, user_obj, expiry_time)
    shared_ptr<Order> order1 = make_shared<Order>("TCS", ORDER_TYPE::LIMIT, true, 1, 993.0f, user1, 24 * 60 * 60);
-    shared_ptr<Order> order2 = make_shared<Order>("APPLE", ORDER_TYPE::LIMIT, true, 2, 999.0f, user2, 24 * 60 * 60);
+    shared_ptr<Order> order2 = make_shared<Order>("AAPL", ORDER_TYPE::LIMIT, true, 2, 999.0f, user2, 24 * 60 * 60);
     shared_ptr<Order> order3 = make_shared<Order>("GOOGL", ORDER_TYPE::LIMIT, true, 3, 999.0f, user4, 24 * 60 * 60);
     shared_ptr<Order> order4 = make_shared<Order>("BABA", ORDER_TYPE::LIMIT, true, 4, 999.0f, user5, 24 * 60 * 60);
     shared_ptr<Order> order5 = make_shared<Order>("TCS", ORDER_TYPE::LIMIT, true, 2, 998.0f, user1, 24 * 60 * 60);
