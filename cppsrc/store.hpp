@@ -36,6 +36,11 @@ class Store {
     static shared_ptr<User> getUser(const string &username);
     static shared_ptr<Stock> getStock(const string &symbol);
 
+    static const unordered_map<string, shared_ptr<User>>& getUsersMap() { return _usersMap; }
+    static const unordered_map<string, shared_ptr<Stock>>& getStocksMap() { return _stocksMap; }
+    static const vector<shared_ptr<Order>>& getOrderVector() { return _orderVtr; }
+    static const vector<vector<string>>& getExecutedOrdersVector() { return _executedOrdersVtr; }
+
     static void printUsers();
     static void printStocks();
     static void printOrderVector();

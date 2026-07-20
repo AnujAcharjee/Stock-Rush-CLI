@@ -11,6 +11,7 @@
 #include "orderExecutioner.hpp"
 #include "orderManager.hpp"
 #include "store.hpp"
+#include "gui.hpp"
 
 #ifdef ENABLE_METRICS
 #include "metricsCollector.hpp"
@@ -257,84 +258,8 @@ int main() {
     }
     cout << "-->> All system orders placed \n";
 
-    bool stop = false;
-    while (!stop) {
-        cout << '\n';
-#ifdef ENABLE_METRICS
-        cout << "1) Add User  2) Add Order  3) View Stocks  4) View Order Book "
-             << "5) View Users  6) View Orders  7) Executed Orders  8) Exit  9) Performance Metrics\n";
-        cout << "Select an option (1-9): ";
-#else
-        cout << "1) Add User  2) Add Order  3) View Stocks  4) View Order Book "
-             << "5) View Users  6) View Orders  7) Executed Orders  8) Exit\n";
-        cout << "Select an option (1-8): ";
-#endif
-
-        int res;
-        cin >> res;
-
-        if (cin.fail()) {
-            cin.clear();                                         
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-#ifdef ENABLE_METRICS
-            cout << "Invalid input. Please enter a number between 1 and 9.\n";
-#else
-            cout << "Invalid input. Please enter a number between 1 and 8.\n";
-#endif
-            continue;
-        }
-
-        cout << '\n';
-
-        switch (res) {
-            case 1:
-                addUser();
-                break;
-
-            case 2:
-                placeOrder(ref(orderMgr));
-                break;
-
-            case 3:
-                Store::printStocks();
-                break;
-
-            case 4:
-                printOrderBook();
-                break;
-
-            case 5:
-                Store::printUsers();
-                break;
-
-            case 6:
-                Store::printOrderVector();
-                break;
-
-            case 7:
-                Store::printExecutedOrders();
-                break;
-
-            case 8:
-                cout << "Exiting...\n";
-                stop = true;
-                break;
-
-#ifdef ENABLE_METRICS
-            case 9:
-                MetricsCollector::getInstance().printMetrics();
-                break;
-#endif
-
-            default:
-#ifdef ENABLE_METRICS
-                cout << "Invalid option. Please choose between 1 and 9.\n";
-#else
-                cout << "Invalid option. Please choose between 1 and 8.\n";
-#endif
-                break;
-        }
-    }
+    // Launch interactive fullscreen FTXUI TUI dashboard
+    launchTUI(orderMgr);
 
     cout << "Closing application... \n";
     return 0;

@@ -25,6 +25,9 @@ class OrderBook {
 
     vector<pair<shared_ptr<Order>, int>> matchOrder_OrderBook(shared_ptr<Order> orderPtr);
 
+    const map<float, queue<shared_ptr<Order>>, greater<float>>& getBuyOrderBook() const { return _buyOrderBook; }
+    const map<float, queue<shared_ptr<Order>>>& getSellOrderBook() const { return _sellOrderBook; }
+
     void setInOrderBookForSell(shared_ptr<Order> orderPtr);
     void printOrderBook() const;
 };
