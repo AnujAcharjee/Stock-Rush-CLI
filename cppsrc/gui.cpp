@@ -264,9 +264,7 @@ void launchTUI(OrderManager &orderMgr) {
         btn_stress_test
     });
 
-    auto main_container = Container::Vertical({
-        comp_tab_toggle,
-        Container::Tab({
+    auto active_tab_container = Container::Tab({
             // Tab 0: Dashboard
             Renderer(comp_user_toggle, [&]() {
                 // Compile Stocks Table
@@ -574,7 +572,11 @@ void launchTUI(OrderManager &orderMgr) {
                     vbox(log_lines) | border | size(HEIGHT, EQUAL, 10)
                 });
             })
-        }, &selected_tab)
+        }, &selected_tab);
+
+    auto main_container = Container::Vertical({
+        comp_tab_toggle,
+        active_tab_container
     });
 
     // Auto-refresh loop thread to redraw the screen periodically (e.g. 5 times per sec to update book charts/metrics)
@@ -591,7 +593,7 @@ void launchTUI(OrderManager &orderMgr) {
             text("STOCK RUSH CLI ENGINE - TRANSACTION DASHBOARD") | center | bold | color(Color::Cyan),
             comp_tab_toggle->Render() | center,
             separator(),
-            main_container->Render() | flex
+            active_tab_container->Render() | flex
         });
     });
 
