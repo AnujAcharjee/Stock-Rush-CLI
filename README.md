@@ -1,98 +1,114 @@
 # Stock Rush CLI
 
-**Stock Rush CLI** is a command-line-based stock trading simulation game where users can place buy and sell orders, manage stock portfolios, and view order books in real time. It simulates the functionality of a stock market using simple commands for creating users, placing orders, and viewing stock-related data.
-
-## Features
-
-- Add users to the system
-- Place buy or sell orders for available stocks
-- View the available stocks with their prices
-- View the order book with buy and sell orders
-- View all placed orders, executed orders, and registered users
-- Performance statistics tracking (orders/sec, matches/sec, thread pool activity, average latency)
-
-### Prerequisites & Setup
-- Clone the repository:
-  ```bash
-  git clone https://github.com/AnujAcharjee/Stock-Rush-CLI.git
-  cd Stock-Rush-CLI
-  ```
-- Requirements:
-  - A C++23 compatible compiler (e.g., `MSVC 19.30+`, `g++ 13+`, `clang++ 16+`)
-  - **CMake 3.14+** installed
-- Compile the engine using CMake:
-  ```bash
-  # 1. Configure the build output (generates build folders)
-  cmake -B build -S .
-
-  # 2. Compile the application
-  cmake --build build --config Release
-  ```
-- After successful compilation, the executable will be available in the build directory.
-- Run the application via your terminal:
-  ```bash
-  # On Windows
-  ./build/Release/Engine.exe
-
-  # On Linux / macOS
-  ./build/Engine
-  ```
-
-### Usage & Navigation
-When you start the application, it launches in fullscreen terminal user interface (TUI) mode.
-
-### Controls:
-*   **Switch Navigation Tabs**: Use the `Left` and `Right` arrow keys while focus is on the top menu bar.
-*   **Cycle Control Focus**: Use the `Tab` key to move forward through forms, dropdowns, and buttons. Use `Shift+Tab` to cycle backward.
-*   **Select Options**: Use the `Up` and `Down` arrow keys to change choices in dropdowns or radio lists, and press `Enter` to expand or select.
-*   **Input Text**: Focus on input boxes (like Username, Quantity, Price) and type directly.
-*   **Execute Buttons**: Focus on buttons (like "Submit Order" or "Trigger Stress Test") and press `Enter` or click them.
+**Stock Rush CLI** is a high-performance C++ stock trading simulation engine and interactive terminal user interface (TUI). It features a multi-threaded matching engine built on a thread pool architecture, capable of processing over **180,000 orders/sec** with sub-1.5 microsecond matching latencies.
 
 ---
 
-### Dashboard Tabs Guide
+## Features
 
-1.  **Dashboard Tab**:
-    *   **Stock Directory**: Lists all available stocks, current market prices, and total available share quantities.
-    *   **User Portfolios**: Scroll through the list of users (`User1` to `User5` or any custom users) to instantly view their current cash balances and demat holdings.
-2.  **Live Order Books Tab**:
-    *   Select any stock ticker (TCS, APPLE, BABA, GOOGL) from the dropdown filter to view its live, side-by-side **Bid (Buy)** vs. **Ask (Sell)** order queues.
-3.  **Place Order Tab**:
-    *   **Form**: Place Limit or Market buy/sell orders. Input a username, select the stock, quantity, and price.
-    *   **Register Account**: Register a new trading username with `10,000` Rs start-up funds.
-4.  **Ledger & Logs Tab**:
-    *   **All Placed Orders**: A running list of all orders submitted to the matching engine, showing their pending/executed quantities.
-    *   **All Executed Trades**: Real-time transaction history showing the order ID, stock symbol, matched quantity, and transaction timestamp.
-5.  **Diagnostics Tab**:
-    *   **Metrics Panel**: Displays live throughput stats:
-        *   **Orders Processed/sec**: Processing rate of the execution queues.
-        *   **Average Matches/sec**: Trade execution rate.
-        *   **Active Worker Threads**: Current active pool threads matching orders.
-        *   **Avg Match Latency**: Average time spent running matching logic (in milliseconds).
-    *   **Stress Testing**: Click "Trigger 100-Order Stress Test" to launch 100 concurrent threads placing random orders simultaneously. Watch the diagnostic metrics update in real time.
-8. View Orders Placed
+- **Interactive FTXUI Dashboard**: Side-by-side bid/ask order books, user demat portfolios, ledger transaction history, and real-time statistics.
+- **Multi-Threaded Order Matcher**: Asynchronous matching engine powered by a custom worker thread pool.
+- **Robust Thread Safety**: Mutex-protected user demat holdings and corrected queue locks preventing priority queue data races.
+- **Headless Stress Testing Runner**: Dedicated benchmark executable to test throughput and latency percentiles under extreme loads.
+- **HFT-Grade Diagnostics**: Tracks throughput (orders/sec), Trades Generated, Average Latency, Median/P95/P99 latency percentiles, CPU core utilization, and Peak Queue Size.
 
-# TODO: UI GIF to be added
+---
 
-## Key Commands & Options
-1) Add User: Creates a new user in the system.
+## Prerequisites & Installation
 
-2) Add Order: Allows placing a new buy or sell order for available stocks.
+### Requirements:
+- A C++23 compatible compiler (e.g., `MSVC 19.30+` on Windows, `g++ 13+` or `clang++ 16+` on Linux/macOS)
+- **CMake 3.14+** installed
 
-3) View Stocks: Displays the available stocks with their current prices.
+### Clone the Repository:
+```bash
+git clone https://github.com/AnujAcharjee/Stock-Rush-CLI.git
+cd Stock-Rush-CLI
+```
 
-4) View Order Book: Shows buy and sell orders for a specific stock.
+---
 
-5) View Users: Lists all registered users along with their funds and demat holdings.
+## Build Instructions
 
-6) View Orders: Displays all orders placed by users, whether executed or pending.
+Compile the application using CMake:
 
-7) Executed Orders: Lists all orders that have been successfully executed.
+```bash
+# 1. Configure the build output (generates build files)
+cmake -B build -S .
 
-8) Exit: Closes the application.
+# 2. Compile the binaries in Release mode
+cmake --build build --config Release
+```
 
-9) Performance Metrics: Displays execution statistics including:
-   * **Orders Processed/sec**: Rate of processing order requests from the execution queue.
-   * **Average Matches/sec**: Rate of matching buy and sell orders.
-   * **Active Worker Threads**: Current count of pool threads actively running.
-   * **Avg Match Latency**: Average time spent executing order matching logic (in milliseconds).
+After successful compilation, two executables will be generated in the build output:
+1. `Engine` / `Engine.exe`: The interactive FTXUI trading dashboard.
+2. `StressTestRunner` / `StressTestRunner.exe`: The high-performance headless stress test benchmark.
+
+---
+
+## 🖥️ Running the Interactive TUI Dashboard
+
+Start the fullscreen trading terminal:
+
+```bash
+# On Windows
+./build/Release/Engine.exe
+
+# On Linux / macOS
+./build/Release/Engine
+```
+
+### Controls & Navigation:
+* **Switch Navigation Tabs**: Use the `Left` and `Right` arrow keys while focus is on the top menu.
+* **Cycle Control Focus**: Use the `Tab` key to move forward through inputs/buttons, and `Shift+Tab` to cycle backward.
+* **Select Stock / Choice Options**: Use the `Up`/`Down` arrow keys and `Enter` to expand and choose from dropdown elements or radioboxes.
+* **Input Text**: Focus on input boxes (like Username, Quantity, Price) and type directly.
+* **Execute Buttons**: Focus on buttons (like "Submit Order" or "Create User") and press `Enter` or click them.
+
+---
+
+## ⚡ Running the Headless Stress Test Benchmark
+
+Run the dedicated benchmarking tool to stress test the matching engine's limits. Pass the number of concurrent orders to dispatch as an argument (defaults to 1000):
+
+```bash
+# On Windows
+./build/Release/StressTestRunner.exe 1000
+
+# On Linux / macOS
+./build/Release/StressTestRunner 1000
+```
+
+### Example Benchmark Output:
+```text
+=== Running Headless Stress Test with 1000 orders ===
+Dispatched 1000 orders in 1 ms.
+Processing matches...
+
+Orders Submitted:       1000
+Orders Executed:        1000
+Trades Generated:       410
+
+Total Runtime:          5.4 ms
+
+Throughput:             186,459 orders/sec
+Average Match Latency:  1.4 μs
+Median Latency:         1.1 μs
+P95 Latency:            2.6 μs
+P99 Latency:            5.9 μs
+
+Worker Threads:         4
+CPU Utilization:        55%
+Peak Queue Size:        148
+---------------------------------------------------
+=== Stress Test Complete ===
+```
+
+### Telemetry Telemetry Breakdown:
+- **Orders Submitted / Executed**: Total orders successfully generated and popped through the thread pool worker queues.
+- **Trades Generated**: Total matching order crossings triggered.
+- **Throughput**: Calculated orders matched and cleared per second.
+- **Latency Percentiles (Avg, Median, P95, P99)**: Measured in microseconds (`μs`), showing the tail-latency performance of order matching.
+- **CPU Utilization**: Sum of CPU active time across all worker threads relative to total elapsed time.
+- **Peak Queue Size**: The maximum height of the priority queue during concurrent multi-threaded order submissions.
+
