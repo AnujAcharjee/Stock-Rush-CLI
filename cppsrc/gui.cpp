@@ -146,7 +146,7 @@ void launchTUI(OrderManager &orderMgr) {
     std::vector<std::string> usernames_list = {"User1", "User2", "User3", "User4", "User5"};
 
     // Form inputs (Place Order Tab)
-    std::string input_username = "User1";
+    int selected_order_user_idx = 0;
     std::string input_qty = "5";
     std::string input_price = "990";
     int selected_stock = 0;
@@ -171,7 +171,7 @@ void launchTUI(OrderManager &orderMgr) {
     Component comp_tab_toggle = Toggle(&tab_titles, &selected_tab);
     Component comp_user_toggle = Radiobox(&usernames_list, &selected_user_idx);
 
-    Component comp_input_user = Input(&input_username, "Username...");
+    Component comp_input_user = Dropdown(&usernames_list, &selected_order_user_idx);
     Component comp_input_qty = Input(&input_qty, "Quantity...");
     Component comp_input_price = Input(&input_price, "Price...");
     Component comp_stock_dropdown = Dropdown(&stocks_list, &selected_stock);
@@ -187,9 +187,14 @@ void launchTUI(OrderManager &orderMgr) {
     std::string user_feedback = "";
 
     Component btn_place_order = Button("Submit Order", [&]() {
-        auto user = Store::getUser(input_username);
+        if (selected_order_user_idx < 0 || selected_order_user_idx >= static_cast<int>(usernames_list.size())) {
+            order_feedback = "Error: Invalid user selected.";
+            return;
+        }
+        std::string order_username = usernames_list[selected_order_user_idx];
+        auto user = Store::getUser(order_username);
         if (!user) {
-            order_feedback = "Error: User '" + input_username + "' not found.";
+            order_feedback = "Error: User '" + order_username + "' not found.";
             return;
         }
         try {
@@ -201,7 +206,7 @@ void launchTUI(OrderManager &orderMgr) {
             auto order = std::make_shared<Order>(stocks_list[selected_stock], o_type, isBuy, qty, price, user, 24 * 60 * 60);
             if (orderMgr.placeOrder(order)) {
                 order_feedback = "Order placed successfully! (" + std::string(isBuy ? "BUY" : "SELL") + " " + std::to_string(qty) + " " + stocks_list[selected_stock] + ")";
-                addTuiLog("User " + input_username + " placed " + (isBuy ? "BUY" : "SELL") + " order for " + std::to_string(qty) + " " + stocks_list[selected_stock]);
+                addTuiLog("User " + order_username + " placed " + (isBuy ? "BUY" : "SELL") + " order for " + std::to_string(qty) + " " + stocks_list[selected_stock]);
             } else {
                 order_feedback = "Error: Order validation failed (check funds/demat).";
             }
@@ -400,7 +405,7 @@ void launchTUI(OrderManager &orderMgr) {
                 return vbox({
                     text("PLACE NEW TRADING ORDER") | bold | color(Color::Green),
                     separator(),
-                    hbox(text("Username:      ") | size(WIDTH, EQUAL, 15), comp_input_user->Render() | border),
+                    hbox(text("Username:      ") | size(WIDTH, EQUAL, 15), comp_input_user->Render()),
                     hbox(text("Stock Ticker:  ") | size(WIDTH, EQUAL, 15), comp_stock_dropdown->Render()),
                     hbox(text("Quantity:      ") | size(WIDTH, EQUAL, 15), comp_input_qty->Render() | border),
                     hbox(text("Price (Rs):    ") | size(WIDTH, EQUAL, 15), comp_input_price->Render() | border),
