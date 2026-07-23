@@ -14,6 +14,16 @@
 
 ---
 
+## 🎥 Demo Video
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=TQ8VVcfNWXk">
+    <img src="https://img.youtube.com/vi/TQ8VVcfNWXk/maxresdefault.jpg" alt="Stock Rush CLI Demo Video" width="80%">
+  </a>
+</p>
+
+---
+
 ## Prerequisites & Installation
 
 ### Requirements:
