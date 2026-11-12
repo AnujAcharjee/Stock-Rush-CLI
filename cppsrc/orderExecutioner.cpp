@@ -21,6 +21,9 @@ StockLock &OrderExecutioner::_lockManager = StockLock::getInstance();
 OrderManager &OrderExecutioner::_manager = OrderManager::getOrderManagerInstance();
 
 OrderExecutioner::OrderExecutioner() {
+#ifdef ENABLE_METRICS
+    MetricsCollector::getInstance().setWorkerThreadCount(getThreadPoolCount());
+#endif
     checkExecutionQueue<_sellProcessingThread, _isSellProcessing>(_manager._SellExecutionQueue, _manager.CV_sellProcessing, "sell");
     checkExecutionQueue<_buyProcessingThread, _isBuyProcessing>(_manager._BuyExecutionQueue, _manager.CV_buyProcessing, "buy");
 }

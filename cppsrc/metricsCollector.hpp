@@ -22,6 +22,7 @@ class MetricsCollector {
 
     std::atomic<unsigned long long> _totalCpuTimeNs{0};
     std::atomic<size_t> _peakQueueSize{0};
+    std::atomic<size_t> _workerThreadCount{4};
 
     std::vector<double> _latencies;
     mutable std::mutex _latenciesMtx;
@@ -128,12 +129,24 @@ class MetricsCollector {
         return (static_cast<double>(_totalMatchLatencyNs.load(std::memory_order_relaxed)) / count) / 1'000'000.0;
     }
 
+    void setWorkerThreadCount(size_t count) {
+        if (count > 0)
+            _workerThreadCount.store(count, std::memory_order_relaxed);
+    }
+
+    size_t getWorkerThreadCount() const {
+        return _workerThreadCount.load(std::memory_order_relaxed);
+    }
+
     double getCpuUtilization() const {
         auto now = _timerStopped.load(std::memory_order_relaxed) ? _endTime : std::chrono::steady_clock::now();
         double elapsedSec = std::chrono::duration<double>(now - _startTime).count();
         if (elapsedSec <= 0)
             return 0.0;
-        double totalAvailableNs = elapsedSec * 4.0 * 1'000'000'000.0;
+        size_t threads = _workerThreadCount.load(std::memory_order_relaxed);
+        if (threads == 0)
+            threads = 4;
+        double totalAvailableNs = elapsedSec * static_cast<double>(threads) * 1'000'000'000.0;
         double utilization = (static_cast<double>(_totalCpuTimeNs.load(std::memory_order_relaxed)) / totalAvailableNs) * 100.0;
         if (utilization > 100.0)
             utilization = 100.0;
@@ -190,7 +203,7 @@ class MetricsCollector {
         std::cout << "P95 Latency:            " << p95 << " \xCE\xBCs\n";
         std::cout << "P99 Latency:            " << p99 << " \xCE\xBCs\n\n";
 
-        std::cout << "Worker Threads:         4\n";
+        std::cout << "Worker Threads:         " << getWorkerThreadCount() << "\n";
         std::cout << "CPU Utilization:        " << static_cast<int>(getCpuUtilization()) << "%\n";
         std::cout << "Peak Queue Size:        " << getPeakQueueSize() << "\n";
         std::cout << "---------------------------------------------------\n";
