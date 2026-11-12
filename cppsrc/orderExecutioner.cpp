@@ -154,6 +154,25 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
         };
         vector<Settlement> completedSettlements;
 
+        auto rollbackCompletedSettlements = [&]() {
+            for (auto it = completedSettlements.rbegin(); it != completedSettlements.rend(); ++it) {
+                try {
+                    if (it->isBuy) {
+                        it->user->addFunds(it->price);
+                        it->user->deductDemat(it->symbol, it->qty);
+                    } else {
+                        it->user->deductFunds(it->price);
+                        it->user->addToDemat(it->symbol, it->qty);
+                    }
+                } catch (...) {
+                    cerr << "Critical: Rollback failed for user " << it->user->getUsername() << "\n";
+                }
+            }
+#ifdef ENABLE_METRICS
+            get_tl_metrics().flush();
+#endif
+        };
+
         for (size_t i = 0; i + 1 < accumulatedOrders.size(); ++i) {
             const auto &[matchedOrder, matchedQty] = accumulatedOrders[i];
 
@@ -161,23 +180,22 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
                 matchedOrder->updateStatus(ORDER_STATUS::EXECUTED);
 
             float price = matchedOrder->getPrice() * matchedQty;
-            tradeAmount += price;
 
             auto user = matchedOrder->getUser();
             string m_order_symbol = matchedOrder->getSymbol();
 
             if (!user && matchedOrder->getOrderType() != ORDER_TYPE::SYSTEM) {
                 cerr << "Error: User is null in matched Order " << matchedOrder->getOrderId() << "\n";
-                continue;
+                rollbackCompletedSettlements();
+                return;
             }
 
             if (user) {
                 try {
                     if (matchedOrder->getIsBuy()) {
                         if (!user->deductFunds(price)) {
-                            cerr << "Error: Insufficient funds for user " << user->getUsername()
-                                 << " on order " << matchedOrder->getOrderId() << "\n";
-                            continue;
+                            throw runtime_error("Insufficient funds for user " + user->getUsername() +
+                                                 " on order " + to_string(matchedOrder->getOrderId()));
                         }
                         user->addToDemat(m_order_symbol, matchedQty);
                     } else {
@@ -187,27 +205,12 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
                     completedSettlements.push_back({user, m_order_symbol, matchedQty, price, matchedOrder->getIsBuy()});
                 } catch (const exception &e) {
                     cerr << "Settlement error for order " << matchedOrder->getOrderId() << ": " << e.what() << "\n";
-                    // Rollback all previously completed settlements
-                    for (auto it = completedSettlements.rbegin(); it != completedSettlements.rend(); ++it) {
-                        try {
-                            if (it->isBuy) {
-                                it->user->addFunds(it->price);
-                                it->user->deductDemat(it->symbol, it->qty);
-                            } else {
-                                it->user->deductFunds(it->price);
-                                it->user->addToDemat(it->symbol, it->qty);
-                            }
-                        } catch (...) {
-                            cerr << "Critical: Rollback failed for user " << it->user->getUsername() << "\n";
-                        }
-                    }
-#ifdef ENABLE_METRICS
-                    get_tl_metrics().flush();
-#endif
+                    rollbackCompletedSettlements();
                     return;
                 }
             }
 
+            tradeAmount += price;
             Store::addExecutedOrder(matchedOrder, matchedQty);
         }
 
@@ -224,23 +227,7 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
         if (orderPtr->getIsBuy()) {
             if (!p_order_user->deductFunds(tradeAmount)) {
                 cerr << "Error: Insufficient funds for primary order user " << p_order_user->getUsername() << "\n";
-                // Rollback matched counterparty settlements
-                for (auto it = completedSettlements.rbegin(); it != completedSettlements.rend(); ++it) {
-                    try {
-                        if (it->isBuy) {
-                            it->user->addFunds(it->price);
-                            it->user->deductDemat(it->symbol, it->qty);
-                        } else {
-                            it->user->deductFunds(it->price);
-                            it->user->addToDemat(it->symbol, it->qty);
-                        }
-                    } catch (...) {
-                        cerr << "Critical: Rollback failed for user " << it->user->getUsername() << "\n";
-                    }
-                }
-#ifdef ENABLE_METRICS
-                get_tl_metrics().flush();
-#endif
+                rollbackCompletedSettlements();
                 return;
             }
             p_order_user->addToDemat(p_order_symbol, matchedQty);
