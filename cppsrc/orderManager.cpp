@@ -50,6 +50,21 @@ bool OrderManager::placeOrder(shared_ptr<Order> orderPtr) {
         return false;
     }
 
+    auto user = orderPtr->getUser();
+    if (user && orderPtr->getOrderType() != ORDER_TYPE::SYSTEM) {
+        if (orderPtr->getIsBuy()) {
+            if (!user->reserveFunds(orderPtr->getPrice() * orderPtr->getQty())) {
+                cerr << "Failed to reserve funds for order.\n";
+                return false;
+            }
+        } else {
+            if (!user->reserveDemat(orderPtr->getSymbol(), orderPtr->getQty())) {
+                cerr << "Failed to reserve stock quantity for order.\n";
+                return false;
+            }
+        }
+    }
+
     Store::addOrder(orderPtr);
 
     setOrderInQueue(orderPtr);

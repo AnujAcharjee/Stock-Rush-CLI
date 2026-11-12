@@ -151,6 +151,7 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
             int qty;
             float price;
             bool isBuy;
+            float reservedAmount;
         };
         vector<Settlement> completedSettlements;
 
@@ -159,10 +160,12 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
                 try {
                     if (it->isBuy) {
                         it->user->addFunds(it->price);
+                        it->user->reserveFunds(it->reservedAmount);
                         it->user->deductDemat(it->symbol, it->qty);
                     } else {
                         it->user->deductFunds(it->price);
                         it->user->addToDemat(it->symbol, it->qty);
+                        it->user->reserveDemat(it->symbol, it->qty);
                     }
                 } catch (...) {
                     cerr << "Critical: Rollback failed for user " << it->user->getUsername() << "\n";
@@ -192,17 +195,22 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
 
             if (user) {
                 try {
+                    float reservedAmt = 0.0f;
                     if (matchedOrder->getIsBuy()) {
                         if (!user->deductFunds(price)) {
                             throw runtime_error("Insufficient funds for user " + user->getUsername() +
                                                  " on order " + to_string(matchedOrder->getOrderId()));
                         }
+                        reservedAmt = matchedOrder->getPrice() * matchedQty;
+                        user->releaseReservedFunds(reservedAmt);
                         user->addToDemat(m_order_symbol, matchedQty);
                     } else {
                         user->addFunds(price);
                         user->deductDemat(m_order_symbol, matchedQty);
+                        user->releaseReservedDemat(m_order_symbol, matchedQty);
+                        reservedAmt = static_cast<float>(matchedQty);
                     }
-                    completedSettlements.push_back({user, m_order_symbol, matchedQty, price, matchedOrder->getIsBuy()});
+                    completedSettlements.push_back({user, m_order_symbol, matchedQty, price, matchedOrder->getIsBuy(), reservedAmt});
                 } catch (const exception &e) {
                     cerr << "Settlement error for order " << matchedOrder->getOrderId() << ": " << e.what() << "\n";
                     rollbackCompletedSettlements();
@@ -230,10 +238,12 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
                 rollbackCompletedSettlements();
                 return;
             }
+            p_order_user->releaseReservedFunds(orderPtr->getPrice() * matchedQty);
             p_order_user->addToDemat(p_order_symbol, matchedQty);
         } else {
             p_order_user->addFunds(tradeAmount);
             p_order_user->deductDemat(p_order_symbol, matchedQty);
+            p_order_user->releaseReservedDemat(p_order_symbol, matchedQty);
         }
 
         Store::addExecutedOrder(orderPtr, matchedQty);

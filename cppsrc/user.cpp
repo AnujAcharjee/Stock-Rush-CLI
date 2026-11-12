@@ -15,6 +15,16 @@ double User::getFunds() const {
     return _funds;
 };
 
+double User::getAvailableFunds() const {
+    std::lock_guard<std::mutex> lock(_mtx);
+    return max(0.0, _funds - _reservedFunds);
+}
+
+double User::getReservedFunds() const {
+    std::lock_guard<std::mutex> lock(_mtx);
+    return _reservedFunds;
+}
+
 unordered_map<string, int> User::getDemat() const {
     std::lock_guard<std::mutex> lock(_mtx);
     return _demat;
@@ -27,6 +37,15 @@ int User::getStockQty_in_demat(const string &symbol) const {
         return it->second;
     }
     return 0;
+}
+
+int User::getAvailableStockQty(const string &symbol) const {
+    std::lock_guard<std::mutex> lock(_mtx);
+    auto it = _demat.find(symbol);
+    int total = (it != _demat.end()) ? it->second : 0;
+    auto rIt = _reservedDemat.find(symbol);
+    int reserved = (rIt != _reservedDemat.end()) ? rIt->second : 0;
+    return max(0, total - reserved);
 }
 
 void User::addFunds(double amount) {
@@ -63,6 +82,41 @@ void User::deductDemat(const string &symbol, int qty) {
         _demat.erase(symbol);
     } else {
         it->second = newQty;
+    }
+}
+
+bool User::reserveFunds(double amount) {
+    std::lock_guard<std::mutex> lock(_mtx);
+    if (_funds - _reservedFunds < amount)
+        return false;
+    _reservedFunds += amount;
+    return true;
+}
+
+void User::releaseReservedFunds(double amount) {
+    std::lock_guard<std::mutex> lock(_mtx);
+    _reservedFunds = max(0.0, _reservedFunds - amount);
+}
+
+bool User::reserveDemat(const string &symbol, int qty) {
+    std::lock_guard<std::mutex> lock(_mtx);
+    auto it = _demat.find(symbol);
+    int total = (it != _demat.end()) ? it->second : 0;
+    auto rIt = _reservedDemat.find(symbol);
+    int reserved = (rIt != _reservedDemat.end()) ? rIt->second : 0;
+    if (total - reserved < qty)
+        return false;
+    _reservedDemat[symbol] = reserved + qty;
+    return true;
+}
+
+void User::releaseReservedDemat(const string &symbol, int qty) {
+    std::lock_guard<std::mutex> lock(_mtx);
+    auto it = _reservedDemat.find(symbol);
+    if (it != _reservedDemat.end()) {
+        it->second = max(0, it->second - qty);
+        if (it->second == 0)
+            _reservedDemat.erase(it);
     }
 }
 
