@@ -1,95 +1,93 @@
 # Stock Rush CLI
 
-**Stock Rush CLI** is a high-performance C++ stock trading simulation engine and interactive terminal user interface (TUI). It features a multi-threaded matching engine built on a thread pool architecture, capable of processing over **210,000 orders/sec** with sub-2.5 microsecond matching latencies.
+**Stock Rush CLI** is a high-performance C++ stock trading simulation engine and interactive terminal user interface (TUI). It features an asynchronous matching engine built on a worker thread pool architecture, capable of processing over **210,000 orders/sec** with sub-2.5 microsecond matching latencies.
+
+![Stock Rush CLI TUI Dashboard](docs/tui_dashboard.png)
 
 ---
 
 ## Features
 
-- **Interactive FTXUI Dashboard**: Side-by-side bid/ask order books, user demat portfolios, ledger transaction history, and real-time statistics.
-- **Multi-Threaded Order Matcher**: Asynchronous matching engine powered by a custom worker thread pool.
-- **Robust Thread Safety**: Mutex-protected user demat holdings and corrected queue locks preventing priority queue data races.
-- **Headless Stress Testing Runner**: Dedicated benchmark executable to test throughput and latency percentiles under extreme loads.
-- **HFT-Grade Diagnostics**: Tracks throughput (orders/sec), Trades Generated, Average Latency, Median/P95/P99 latency percentiles, CPU core utilization, and Peak Queue Size.
+- **Interactive FTXUI Dashboard**: Real-time terminal UI with live portfolio balances, stock liquidity feeds, side-by-side bid/ask order books, order submission forms, and ledger execution history.
+- **Multi-Threaded Order Matcher**: Asynchronous matching engine powered by an internal worker thread pool.
+- **Financial Ledger & Escrow Settlement**: Balance and stock holding reservations on order placement, counterparty verification, atomic rollback on partial settlements, and zero leaked funds guarantees.
+- **Zero-Friction Launch Scripts**: Single-command runners for Windows (`run.ps1`) and Linux/macOS (`run.sh`) that auto-build and run the application with no manual setup.
+- **Headless Stress Testing Runner**: Dedicated benchmarking executable to evaluate raw engine throughput and latency percentiles under extreme loads.
 
 ---
 
-## 🎥 Demo Video
+## 🚀 Quick Start (Single-Command Runners)
 
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=TQ8VVcfNWXk">
-    <img src="https://img.youtube.com/vi/TQ8VVcfNWXk/maxresdefault.jpg" alt="Stock Rush CLI Demo Video" width="80%">
-  </a>
-</p>
+You can build and run both the interactive dashboard and the benchmarks with one simple command:
 
----
-
-## Prerequisites & Installation
-
-### Requirements:
-- A C++23 compatible compiler (e.g., `MSVC 19.30+` on Windows, `g++ 13+` or `clang++ 16+` on Linux/macOS)
-- **CMake 3.14+** installed
-
-### Clone the Repository:
+### On Linux / macOS (`./run.sh`)
 ```bash
-git clone https://github.com/AnujAcharjee/Stock-Rush-CLI.git
-cd Stock-Rush-CLI
+chmod +x run.sh
+
+# 1. Launch interactive TUI (auto-builds if needed)
+./run.sh
+
+# 2. Run stress test benchmark (default: 1,000 orders)
+./run.sh test
+
+# 3. Run stress test with custom order volume
+./run.sh test 10000
+
+# 4. Rebuild or clean
+./run.sh build
+./run.sh clean
+```
+
+### On Windows PowerShell (`.\run.ps1`)
+```powershell
+# 1. Launch interactive TUI (auto-builds if needed)
+.\run.ps1
+
+# 2. Run stress test benchmark (default: 1,000 orders)
+.\run.ps1 test
+
+# 3. Run stress test with custom order volume
+.\run.ps1 test 10000
+
+# 4. Rebuild or clean
+.\run.ps1 build
+.\run.ps1 clean
 ```
 
 ---
 
-## Build Instructions
+## 🖥️ Interactive TUI Dashboard
 
-Compile the application using CMake:
+The terminal interface provides 5 specialized tabs:
 
-```bash
-# 1. Configure the build output (generates build files)
-cmake -B build -S .
-
-# 2. Compile the binaries in Release mode
-cmake --build build --config Release
-```
-
-After successful compilation, two executables will be generated in the build output:
-1. `Engine` / `Engine.exe`: The interactive FTXUI trading dashboard.
-2. `StressTestRunner` / `StressTestRunner.exe`: The high-performance headless stress test benchmark.
-
----
-
-## 🖥️ Running the Interactive TUI Dashboard
-
-Start the fullscreen trading terminal:
-
-```bash
-# On Windows
-./build/Release/Engine.exe
-
-# On Linux / macOS
-./build/Release/Engine
-```
+1. **`[ Dashboard ]`**: Live market view showing available stocks, prices, liquidity, and selected user account portfolios (available cash balance & demat holdings).
+2. **`[ Order Books ]`**: Live bid/ask depth ladder and active order queues for any selected stock ticker.
+3. **`[ Place Order ]`**: Interactive form to submit Buy/Sell, Market/Limit orders with custom quantities and limit prices.
+4. **`[ Register User ]`**: Form to create new user accounts and seed initial trading balances.
+5. **`[ Ledger & Logs ]`**: Historical audit log of all pending/active orders, matched trade executions, and transaction timestamps.
 
 ### Controls & Navigation:
-* **Switch Navigation Tabs**: Use the `Left` and `Right` arrow keys while focus is on the top menu.
-* **Cycle Control Focus**: Use the `Tab` key to move forward through inputs/buttons, and `Shift+Tab` to cycle backward.
-* **Select Stock / Choice Options**: Use the `Up`/`Down` arrow keys and `Enter` to expand and choose from dropdown elements or radioboxes.
-* **Input Text**: Focus on input boxes (like Username, Quantity, Price) and type directly.
-* **Execute Buttons**: Focus on buttons (like "Submit Order" or "Create User") and press `Enter` or click them.
+* **Switch Tabs**: Use the `Left` and `Right` arrow keys while focused on the top tab bar.
+* **Cycle Controls**: Press `Tab` to cycle focus forward through inputs/buttons, and `Shift+Tab` to cycle backward.
+* **Select Options**: Use `Up`/`Down` arrow keys and `Enter` to select from lists, dropdowns, and radio buttons.
+* **Submit Actions**: Focus on buttons (e.g., *Submit Order*, *Create User*) and press `Enter`.
 
 ---
 
-## ⚡ Running the Headless Stress Test Benchmark
+## ⚡ Headless Stress Test Benchmark
 
-Run the dedicated benchmarking tool to stress test the matching engine's limits. Pass the number of concurrent orders to dispatch as an argument (defaults to 1000):
+Run the benchmarking tool to measure raw engine performance. Pass the number of concurrent orders to dispatch as an argument (defaults to 1,000):
 
 ```bash
-# On Windows
-./build/Release/StressTestRunner.exe 1000
+# Via script:
+./run.sh test 100000        # Linux/macOS
+.\run.ps1 test 100000       # Windows
 
-# On Linux / macOS
-./build/Release/StressTestRunner 1000
+# Or direct executable:
+./build/Release/StressTestRunner.exe 100000
 ```
 
-### Example Benchmark Output:
+### Benchmark Metrics Output:
 ```text
 === Running Headless Stress Test with 1000000 orders ===
 Dispatched 1000000 orders in 42 ms.
@@ -114,17 +112,32 @@ Peak Queue Size:        67425
 === Stress Test Complete ===
 ```
 
-### Telemetry Telemetry Breakdown:
-- **Orders Submitted / Executed**: Total orders successfully generated and popped through the thread pool worker queues.
-- **Trades Generated**: Total matching order crossings triggered.
-- **Throughput**: Calculated orders matched and cleared per second.
-- **Latency Percentiles (Avg, Median, P95, P99)**: Measured in microseconds (`μs`), showing the tail-latency performance of order matching.
-- **CPU Utilization**: Sum of CPU active time across all worker threads relative to total elapsed time.
-- **Peak Queue Size**: The maximum height of the priority queue during concurrent multi-threaded order submissions.
+### Metrics Explained:
+- **Throughput**: Orders matched, executed, and settled per second.
+- **Latency Percentiles (Avg, Median, P95, P99)**: Sub-microsecond matching tail latency.
+- **Peak Queue Size**: Maximum concurrency depth observed across internal priority queues.
+- **Balance Integrity**: Verified zero phantom trades and complete fund reconciliation after multi-threaded matching.
+
+---
+
+## 🛠️ Manual Compilation (Optional)
+
+If you prefer building manually without the runner scripts:
+
+### Prerequisites:
+- C++23 compatible compiler (`MSVC 19.30+`, `g++ 13+`, or `clang++ 16+`)
+- **CMake 3.14+**
+
+```bash
+# 1. Configure
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+# 2. Build
+cmake --build build --config Release
+```
 
 ---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
