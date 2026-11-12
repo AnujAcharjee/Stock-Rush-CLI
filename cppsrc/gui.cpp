@@ -33,111 +33,6 @@ void addTuiLog(const std::string &msg) {
     }
 }
 
-// stress test runner
-#ifdef ENABLE_METRICS
-void runStressTestTUI(OrderManager &orderMgr, int numOrders) {
-    const int NUM_ORDERS = numOrders;
-    addTuiLog("Stress test: Initializing users and stocks...");
-
-    // 1. Boost user balances and holdings to prevent validation rejections
-    std::vector<std::string> usernames = {"User1", "User2", "User3", "User4", "User5"};
-    std::vector<std::string> stocks = {"TCS", "AAPL", "BABA", "GOOGL"};
-
-    for (const auto &name : usernames) {
-        auto user = Store::getUser(name);
-        if (user) {
-            user->addFunds(100000000.0); // 100 million
-            for (const auto &symbol : stocks) {
-                user->addToDemat(symbol, 1000000); // 1 million shares
-            }
-        }
-    }
-
-    if (!Store::getStock("AAPL"))
-        Store::addStocks("AAPL", 225.0f, 100000);
-    if (!Store::getStock("TCS"))
-        Store::addStocks("TCS", 999.0f, 100000);
-    if (!Store::getStock("GOOGL"))
-        Store::addStocks("GOOGL", 165.0f, 100000);
-    if (!Store::getStock("BABA"))
-        Store::addStocks("BABA", 75.0f, 100000);
-
-    // 2. Generate random orders
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> userDist(0, usernames.size() - 1);
-    std::uniform_int_distribution<> stockDist(0, stocks.size() - 1);
-    std::uniform_int_distribution<> sideDist(0, 1); // 0 = Sell, 1 = Buy
-    std::uniform_int_distribution<> qtyDist(1, 10);
-    std::uniform_real_distribution<float> priceVariationDist(-20.0f, 20.0f);
-
-    std::vector<std::shared_ptr<Order>> stressOrders;
-    for (int i = 0; i < NUM_ORDERS; ++i) {
-        auto user = Store::getUser(usernames[userDist(gen)]);
-        std::string symbol = stocks[stockDist(gen)];
-        bool isBuy = sideDist(gen) == 1;
-        int qty = qtyDist(gen);
-
-        auto stock = Store::getStock(symbol);
-        float basePrice = stock ? stock->getPrice() : 500.0f;
-        float price = basePrice + priceVariationDist(gen);
-        if (price <= 1.0f)
-            price = 10.0f;
-
-        stressOrders.push_back(std::make_shared<Order>(symbol, ORDER_TYPE::LIMIT, isBuy, qty, price, user, 24 * 60 * 60));
-    }
-
-    int total_threads = OrderExecutioner::getThreadPoolCount();
-    if (total_threads <= 0) total_threads = 4; // fallback just in case
-    addTuiLog("Stress test: Dispatching " + std::to_string(NUM_ORDERS) + " orders using " + std::to_string(total_threads) + " concurrent threads...");
-
-    // 3. Reset and start benchmark timer
-    MetricsCollector::getInstance().resetTimer();
-    auto startTime = std::chrono::high_resolution_clock::now();
-
-    int num_dispatch_threads = total_threads;
-    std::vector<std::thread> dispatchThreads;
-    int orders_per_thread = NUM_ORDERS / num_dispatch_threads;
-
-    for (int t = 0; t < num_dispatch_threads; ++t) {
-        int startIdx = t * orders_per_thread;
-        int endIdx = (t == num_dispatch_threads - 1) ? NUM_ORDERS : (t + 1) * orders_per_thread;
-
-        dispatchThreads.emplace_back([&orderMgr, &stressOrders, startIdx, endIdx]() {
-            for (int i = startIdx; i < endIdx; ++i) {
-                orderMgr.placeOrder(stressOrders[i]);
-            }
-        });
-    }
-
-    for (auto &t : dispatchThreads) {
-        t.join();
-    }
-
-    auto endTime = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-    addTuiLog("Stress test: Dispatched " + std::to_string(NUM_ORDERS) + " orders in " + std::to_string(duration) + " ms. Matching trades...");
-
-    // 4. Poll until all dispatched orders are processed and thread pool is idle
-    while (true) {
-        if (MetricsCollector::getInstance().getTotalOrdersProcessed() >= (unsigned long long)NUM_ORDERS &&
-            MetricsCollector::getInstance().getActiveThreads() == 0) {
-            MetricsCollector::getInstance().stopTimer();
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    }
-
-    double totalMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
-    auto &collector = MetricsCollector::getInstance();
-    std::ostringstream ss;
-    ss << "Stress test finished: " << NUM_ORDERS << " orders in " << std::fixed << std::setprecision(1) << totalMs << " ms ("
-       << static_cast<unsigned long long>(collector.getOrdersProcessedPerSec()) << " orders/sec) | Avg Latency: "
-       << std::fixed << std::setprecision(1) << (collector.getAvgMatchLatencyMs() * 1000.0) << " us";
-    addTuiLog(ss.str());
-}
-#endif
-
 void launchTUI(OrderManager &orderMgr) {
     auto screen = ScreenInteractive::Fullscreen();
 
@@ -171,7 +66,6 @@ void launchTUI(OrderManager &orderMgr) {
 
     // Add User Form
     std::string input_new_username = "";
-    std::string input_stress_orders = "1000";
 
     // Books Tab selection
     int selected_stock_book = 0;
@@ -188,13 +82,11 @@ void launchTUI(OrderManager &orderMgr) {
     Component comp_type_radio = Radiobox(&types, &selected_type);
 
     Component comp_input_new_user = Input(&input_new_username, "New username...");
-    Component comp_input_stress = Input(&input_stress_orders, "Order count...");
 
     Component comp_book_stock_dropdown = Dropdown(&stocks_list, &selected_stock_book);
 
     std::string order_feedback = "";
     std::string user_feedback = "";
-    std::atomic<int> stress_status{0}; // 0 = idle, 1 = running, 2 = complete
 
     Component btn_place_order = Button("Submit Order", [&]() {
         if (input_order_username.empty()) {
@@ -251,29 +143,6 @@ void launchTUI(OrderManager &orderMgr) {
         }
     });
 
-    Component btn_stress_test = Button("Trigger Stress Test", [&]() {
-#ifdef ENABLE_METRICS
-        int numOrders = 1000;
-        try {
-            numOrders = std::stoi(input_stress_orders);
-        } catch (...) {
-            addTuiLog("Invalid order count input. Defaulting to 1000.");
-            numOrders = 1000;
-        }
-        if (numOrders <= 0) {
-            addTuiLog("Order count must be greater than zero.");
-            return;
-        }
-        stress_status = 1;
-        std::thread([&orderMgr, numOrders, &stress_status]() {
-            runStressTestTUI(orderMgr, numOrders);
-            stress_status = 2;
-        }).detach();
-#else
-        addTuiLog("Stress test requires ENABLE_METRICS to be ON.");
-#endif
-    });
-
     auto place_order_container = Container::Vertical({comp_input_user,
                                                       comp_stock_dropdown,
                                                       comp_input_qty,
@@ -287,8 +156,7 @@ void launchTUI(OrderManager &orderMgr) {
 
     auto book_dropdown_container = Container::Vertical({comp_book_stock_dropdown});
 
-    auto diagnostic_container = Container::Vertical({comp_input_stress,
-                                                     btn_stress_test});
+    auto diagnostic_container = Container::Vertical({});
 
     auto active_tab_container = Container::Tab({// Tab 0: Dashboard
                                                 Renderer(comp_user_toggle, [&]() {
@@ -534,19 +402,7 @@ void launchTUI(OrderManager &orderMgr) {
                                                         }
                                                     }
 
-                                                    return vbox({hbox({vbox(metric_elements) | flex | border | size(WIDTH, GREATER_THAN, 40),
-                                                                       vbox({text("Stress Testing Controls") | bold | color(Color::Red),
-                                                                             separator(),
-                                                                             hbox({text("Order Count: ") | center,
-                                                                                   comp_input_stress->Render() | border | size(WIDTH, EQUAL, 12)}) |
-                                                                                 center,
-                                                                             separator(),
-                                                                             btn_stress_test->Render() | center,
-                                                                             (stress_status == 1 ? text("Stress test running...") | color(Color::Yellow) | center :
-                                                                              stress_status == 2 ? text("Stress test complete! Check logs for details.") | color(Color::Green) | center :
-                                                                              text("")),
-                                                                             text("Pushes random Buy/Sell orders into queues concurrently using " + std::to_string(OrderExecutioner::getThreadPoolCount()) + " threads") | color(Color::GrayLight) | center}) |
-                                                                           flex | border}),
+                                                    return vbox({hbox({vbox(metric_elements) | flex | border}),
                                                                  vbox(log_lines) | border | size(HEIGHT, EQUAL, 10)});
                                                 })},
                                                &selected_tab);

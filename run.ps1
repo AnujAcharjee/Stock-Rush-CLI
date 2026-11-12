@@ -42,7 +42,12 @@ $cmakePath = Find-Tool "cmake.exe" @(
 function Invoke-Build {
     Write-Host "==> Building stockRush (Release)..." -ForegroundColor Cyan
 
-    $slnPath = Join-Path $BuildDir "stockRush.sln"
+    $slnFiles = Get-ChildItem -Path $BuildDir -Filter "*.sln"
+    if ($slnFiles.Count -gt 0) {
+        $slnPath = $slnFiles[0].FullName
+    } else {
+        $slnPath = Join-Path $BuildDir "StockRushCLI.sln"
+    }
     if (!(Test-Path $slnPath)) {
         if (-not $cmakePath) {
             throw "CMake not found. Please install CMake or add it to your PATH."
@@ -118,3 +123,4 @@ Examples:
 "@ -ForegroundColor Cyan
     }
 }
+
