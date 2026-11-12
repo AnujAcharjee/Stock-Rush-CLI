@@ -182,6 +182,7 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
                     cerr << "Critical: Rollback failed for user " << it->user->getUsername() << "\n";
                 }
             }
+            orderBook->rollbackMatch(accumulatedOrders);
 #ifdef ENABLE_METRICS
             get_tl_metrics().flush();
 #endif

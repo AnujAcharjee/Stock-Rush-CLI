@@ -90,6 +90,66 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_OrderBook(shared_ptr<
     }
 }
 
+void OrderBook::rollbackMatch(const vector<pair<shared_ptr<Order>, int>> &accumulatedOrders) {
+    if (accumulatedOrders.empty())
+        return;
+
+    auto [primaryOrder, primaryMatchedQty] = accumulatedOrders.back();
+
+    // 1. Remove primary order from same-side book if it was added as a resting limit remainder
+    if (primaryOrder && primaryOrder->getOrderType() == ORDER_TYPE::LIMIT) {
+        auto removeRestingOrder = [&](auto &book) {
+            auto it = book.find(primaryOrder->getPrice());
+            if (it != book.end()) {
+                queue<shared_ptr<Order>> filteredQ;
+                while (!it->second.empty()) {
+                    auto o = it->second.front();
+                    it->second.pop();
+                    if (o != primaryOrder) {
+                        filteredQ.push(o);
+                    }
+                }
+                if (filteredQ.empty()) {
+                    book.erase(it);
+                } else {
+                    it->second = move(filteredQ);
+                }
+            }
+        };
+
+        if (primaryOrder->getIsBuy()) {
+            removeRestingOrder(_buyOrderBook);
+        } else {
+            removeRestingOrder(_sellOrderBook);
+        }
+    }
+
+    if (primaryOrder) {
+        primaryOrder->updateExecutedQty(-primaryMatchedQty);
+        if (primaryOrder->getStatus() == ORDER_STATUS::EXECUTED) {
+            primaryOrder->updateStatus(ORDER_STATUS::OPEN);
+        }
+    }
+
+    // 2. Restore all counterparty orders (elements 0 to size - 2)
+    for (size_t i = 0; i + 1 < accumulatedOrders.size(); ++i) {
+        const auto &[matchedOrder, qty] = accumulatedOrders[i];
+        if (!matchedOrder)
+            continue;
+
+        matchedOrder->updateExecutedQty(-qty);
+        if (matchedOrder->getStatus() == ORDER_STATUS::EXECUTED) {
+            matchedOrder->updateStatus(ORDER_STATUS::OPEN);
+        }
+
+        if (matchedOrder->getIsBuy()) {
+            _buyOrderBook[matchedOrder->getPrice()].push(matchedOrder);
+        } else {
+            _sellOrderBook[matchedOrder->getPrice()].push(matchedOrder);
+        }
+    }
+}
+
 void OrderBook::printOrderBook() const {
     auto createDisplayRows = [](const auto &orderBook) -> vector<pair<float, int>> {
         vector<pair<float, int>> displayRows;

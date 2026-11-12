@@ -24,6 +24,7 @@ class OrderBook {
     ~OrderBook();
 
     vector<pair<shared_ptr<Order>, int>> matchOrder_OrderBook(shared_ptr<Order> orderPtr);
+    void rollbackMatch(const vector<pair<shared_ptr<Order>, int>> &accumulatedOrders);
 
     const map<float, queue<shared_ptr<Order>>, greater<float>> &getBuyOrderBook() const { return _buyOrderBook; }
     const map<float, queue<shared_ptr<Order>>> &getSellOrderBook() const { return _sellOrderBook; }
