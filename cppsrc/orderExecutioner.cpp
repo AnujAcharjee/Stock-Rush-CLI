@@ -136,6 +136,17 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
         }
 #endif
         if (accumulatedOrders.empty()) {
+            if (orderPtr->getOrderType() == ORDER_TYPE::MARKET) {
+                orderPtr->updateStatus(ORDER_STATUS::CANCELLED);
+                auto user = orderPtr->getUser();
+                if (user) {
+                    if (orderPtr->getIsBuy()) {
+                        user->releaseReservedFunds(orderPtr->getPrice() * orderPtr->getQty());
+                    } else {
+                        user->releaseReservedDemat(orderPtr->getSymbol(), orderPtr->getQty());
+                    }
+                }
+            }
 #ifdef ENABLE_METRICS
             get_tl_metrics().flush();
 #endif
@@ -224,8 +235,11 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
 
         int matchedQty = accumulatedOrders.back().second;
 
-        if (orderPtr->getPendingQty() == 0 && orderPtr->getStatus() == ORDER_STATUS::OPEN)
+        if (orderPtr->getPendingQty() == 0 && orderPtr->getStatus() == ORDER_STATUS::OPEN) {
             orderPtr->updateStatus(ORDER_STATUS::EXECUTED);
+        } else if (orderPtr->getOrderType() == ORDER_TYPE::MARKET && orderPtr->getStatus() == ORDER_STATUS::OPEN) {
+            orderPtr->updateStatus(matchedQty > 0 ? ORDER_STATUS::EXECUTED : ORDER_STATUS::CANCELLED);
+        }
 
         auto p_order_user = orderPtr->getUser();
         if (!p_order_user)
@@ -239,11 +253,19 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
                 return;
             }
             p_order_user->releaseReservedFunds(orderPtr->getPrice() * matchedQty);
+            // If market order partially filled, release reserve for remainder
+            if (orderPtr->getOrderType() == ORDER_TYPE::MARKET && orderPtr->getPendingQty() > 0) {
+                p_order_user->releaseReservedFunds(orderPtr->getPrice() * orderPtr->getPendingQty());
+            }
             p_order_user->addToDemat(p_order_symbol, matchedQty);
         } else {
             p_order_user->addFunds(tradeAmount);
             p_order_user->deductDemat(p_order_symbol, matchedQty);
             p_order_user->releaseReservedDemat(p_order_symbol, matchedQty);
+            // If market order partially filled, release reserve for remainder
+            if (orderPtr->getOrderType() == ORDER_TYPE::MARKET && orderPtr->getPendingQty() > 0) {
+                p_order_user->releaseReservedDemat(p_order_symbol, orderPtr->getPendingQty());
+            }
         }
 
         Store::addExecutedOrder(orderPtr, matchedQty);
