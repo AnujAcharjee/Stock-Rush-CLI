@@ -160,7 +160,7 @@ void launchTUI(OrderManager &orderMgr) {
     std::string input_price = "";
     std::string input_order_stock = "";
     std::vector<std::string> stocks_list;
-    for (const auto &[symbol, stockPtr] : Store::getStocksMap()) {
+    for (const auto &[symbol, stockPtr] : Store::getStocksMapSnapshot()) {
         stocks_list.push_back(symbol);
     }
     std::sort(stocks_list.begin(), stocks_list.end());

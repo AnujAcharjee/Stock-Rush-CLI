@@ -217,6 +217,11 @@ void Store::printExecutedOrders() {
     cout << string(90, '-') << '\n';
 }
 
+unordered_map<string, shared_ptr<User>> Store::getUsersMapSnapshot() {
+    scoped_lock lock(userMtx);
+    return _usersMap;
+}
+
 unordered_map<string, shared_ptr<Stock>> Store::getStocksMapSnapshot() {
     scoped_lock lock(stockMtx);
     return _stocksMap;
