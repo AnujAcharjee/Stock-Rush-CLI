@@ -42,8 +42,7 @@ void launchTUI(OrderManager &orderMgr) {
         "Order Books",
         "Place Order",
         "Register User",
-        "Ledger & Logs",
-        "Diagnostics"};
+        "Ledger & Logs"};
 
     // User Selection (Dashboard Tab)
     int selected_user_idx = 0;
@@ -155,8 +154,6 @@ void launchTUI(OrderManager &orderMgr) {
                                                         btn_create_user});
 
     auto book_dropdown_container = Container::Vertical({comp_book_stock_dropdown});
-
-    auto diagnostic_container = Container::Vertical({});
 
     auto active_tab_container = Container::Tab({// Tab 0: Dashboard
                                                 Renderer(comp_user_toggle, [&]() {
@@ -328,82 +325,6 @@ void launchTUI(OrderManager &orderMgr) {
 
                                                     return hbox({vbox(order_rows) | flex | border | size(WIDTH, GREATER_THAN, 50),
                                                                  vbox(exec_rows) | flex | border});
-                                                }),
-
-                                                // Tab 4: Diagnostics
-                                                Renderer(diagnostic_container, [&]() {
-                                                    std::vector<Element> metric_elements;
-                                                    metric_elements.push_back(text("Matching Engine Diagnostics") | bold | color(Color::Cyan));
-                                                    metric_elements.push_back(separator());
-
-#ifdef ENABLE_METRICS
-                                                    auto &collector = MetricsCollector::getInstance();
-
-                                                    auto formatWithCommas = [](unsigned long long value) -> std::string {
-                                                        std::string numStr = std::to_string(value);
-                                                        int insertPos = static_cast<int>(numStr.length()) - 3;
-                                                        while (insertPos > 0) {
-                                                            numStr.insert(insertPos, ",");
-                                                            insertPos -= 3;
-                                                        }
-                                                        return numStr;
-                                                    };
-
-                                                    // Read percentiles
-                                                    double median = 0.0, p95 = 0.0, p99 = 0.0;
-                                                    auto sortedLatencies = collector.getSortedLatencies();
-                                                    double avgLatencyUs = (sortedLatencies.empty()) ? 0.0 : (collector.getAvgMatchLatencyMs() * 1000.0);
-                                                    if (!sortedLatencies.empty()) {
-                                                        size_t n = sortedLatencies.size();
-                                                        median = sortedLatencies[n * 50 / 100] / 1000.0;
-                                                        p95 = sortedLatencies[n * 95 / 100] / 1000.0;
-                                                        p99 = sortedLatencies[n * 99 / 100] / 1000.0;
-                                                    }
-
-                                                    metric_elements.push_back(hbox(text("Orders Submitted:      ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getTotalOrdersSubmitted())) | bold));
-                                                    metric_elements.push_back(hbox(text("Orders Executed:       ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getTotalOrdersProcessed())) | bold));
-                                                    metric_elements.push_back(hbox(text("Trades Generated:      ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getTotalMatches())) | bold));
-                                                    metric_elements.push_back(separator());
-
-                                                    metric_elements.push_back(hbox(text("Throughput:            ") | size(WIDTH, EQUAL, 25), text(formatWithCommas(static_cast<unsigned long long>(collector.getOrdersProcessedPerSec())) + " orders/sec") | bold));
-
-                                                    std::ostringstream ss_avg, ss_med, ss_p95, ss_p99;
-                                                    ss_avg << std::fixed << std::setprecision(1) << avgLatencyUs;
-                                                    ss_med << std::fixed << std::setprecision(1) << median;
-                                                    ss_p95 << std::fixed << std::setprecision(1) << p95;
-                                                    ss_p99 << std::fixed << std::setprecision(1) << p99;
-
-                                                    metric_elements.push_back(hbox(text("Average Match Latency: ") | size(WIDTH, EQUAL, 25), text(ss_avg.str() + " us") | bold));
-                                                    metric_elements.push_back(hbox(text("Median Latency:        ") | size(WIDTH, EQUAL, 25), text(ss_med.str() + " us") | bold));
-                                                    metric_elements.push_back(hbox(text("P95 Latency:           ") | size(WIDTH, EQUAL, 25), text(ss_p95.str() + " us") | bold));
-                                                    metric_elements.push_back(hbox(text("P99 Latency:           ") | size(WIDTH, EQUAL, 25), text(ss_p99.str() + " us") | bold));
-                                                    metric_elements.push_back(separator());
-
-                                                    size_t active_threads = collector.getActiveThreads();
-                                                    size_t total_threads = OrderExecutioner::getThreadPoolCount();
-                                                    metric_elements.push_back(hbox(text("Worker Threads:        ") | size(WIDTH, EQUAL, 25), text(std::to_string(active_threads) + " (out of " + std::to_string(total_threads) + " threads)") | bold));
-
-                                                    std::ostringstream ss_util;
-                                                    ss_util << std::fixed << std::setprecision(0) << collector.getCpuUtilization();
-                                                    metric_elements.push_back(hbox(text("CPU Utilization:       ") | size(WIDTH, EQUAL, 25), text(ss_util.str() + "%") | bold));
-                                                    metric_elements.push_back(hbox(text("Peak Queue Size:       ") | size(WIDTH, EQUAL, 25), text(std::to_string(collector.getPeakQueueSize())) | bold));
-#else
-                                                    metric_elements.push_back(text("Metrics Disabled. Please compile with ENABLE_METRICS toggled ON."));
-#endif
-                                                    metric_elements.push_back(separator());
-
-                                                    // Fetch logs
-                                                    std::vector<Element> log_lines;
-                                                    log_lines.push_back(text("System Logs:") | bold);
-                                                    {
-                                                        std::lock_guard<std::mutex> lock(tui_logs_mutex);
-                                                        for (auto it = tui_logs.rbegin(); it != tui_logs.rend(); ++it) {
-                                                            log_lines.push_back(text(" - " + *it));
-                                                        }
-                                                    }
-
-                                                    return vbox({hbox({vbox(metric_elements) | flex | border}),
-                                                                 vbox(log_lines) | border | size(HEIGHT, EQUAL, 10)});
                                                 })},
                                                &selected_tab);
 
