@@ -7,30 +7,82 @@ cd "$(dirname "$0")"
 CMD="${1:-ui}"
 COUNT="${2:-1000}"
 
-# Auto-detect available cores for fast parallel compilation
+# Auto-locate CMake (standard Linux /usr/bin/cmake or Windows Visual Studio fallback under Git Bash)
+find_cmake() {
+    if command -v cmake >/dev/null 2>&1; then
+        command -v cmake
+        return
+    fi
+    local candidate="/c/Program Files/Microsoft Visual Studio/2022/Professional/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
+    if [ -f "$candidate" ]; then
+        echo "$candidate"
+        return
+    fi
+    candidate="/c/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
+    if [ -f "$candidate" ]; then
+        echo "$candidate"
+        return
+    fi
+    candidate="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
+    if [ -f "$candidate" ]; then
+        echo "$candidate"
+        return
+    fi
+    echo ""
+}
+
+CMAKE_CMD="$(find_cmake)"
+
+# Detect binaries (Linux './build/Engine' or Windows './build/Release/Engine.exe')
+find_binary() {
+    local name="$1"
+    if [ -f "build/$name" ]; then
+        echo "./build/$name"
+    elif [ -f "build/Release/$name.exe" ]; then
+        echo "./build/Release/$name.exe"
+    elif [ -f "build/$name.exe" ]; then
+        echo "./build/$name.exe"
+    elif [ -f "$name.exe" ]; then
+        echo "./$name.exe"
+    else
+        echo ""
+    fi
+}
+
 CORES=$(nproc 2>/dev/null || echo 4)
 
 build_if_needed() {
     local target="$1"
-    if [ ! -f "build/$target" ]; then
-        echo "==> Binary build/$target not found. Building with $CORES cores..."
-        cmake -B build -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release -j "$CORES"
+    local bin="$(find_binary "$target")"
+    if [ -z "$bin" ]; then
+        if [ -z "$CMAKE_CMD" ]; then
+            echo "Error: cmake not found. Please install cmake or add it to PATH." >&2
+            exit 1
+        fi
+        echo "==> Binary $target not found. Building with $CORES cores..."
+        "$CMAKE_CMD" -B build -DCMAKE_BUILD_TYPE=Release
+        "$CMAKE_CMD" --build build --config Release -j "$CORES"
     fi
 }
 
 case "$CMD" in
     ui)
         build_if_needed "Engine"
-        exec ./build/Engine
+        BIN="$(find_binary "Engine")"
+        exec "$BIN"
         ;;
     test)
         build_if_needed "StressTestRunner"
-        exec ./build/StressTestRunner "$COUNT"
+        BIN="$(find_binary "StressTestRunner")"
+        exec "$BIN" "$COUNT"
         ;;
     build)
-        cmake -B build -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release -j "$CORES"
+        if [ -z "$CMAKE_CMD" ]; then
+            echo "Error: cmake not found in PATH." >&2
+            exit 1
+        fi
+        "$CMAKE_CMD" -B build -DCMAKE_BUILD_TYPE=Release
+        "$CMAKE_CMD" --build build --config Release -j "$CORES"
         ;;
     clean)
         rm -rf build
@@ -38,7 +90,7 @@ case "$CMD" in
         ;;
     *)
         echo "Usage: ./run.sh [ui|test|build|clean] [count]"
-        echo "  ./run.sh          -> Run interactive UI (auto-builds if needed)"
+        echo "  ./run.sh          -> Run interactive UI"
         echo "  ./run.sh test     -> Run stress test with 1000 orders"
         echo "  ./run.sh test 5000-> Run stress test with 5000 orders"
         echo "  ./run.sh build    -> Compile release binaries"
